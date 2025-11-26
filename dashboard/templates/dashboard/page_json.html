@@ -1,0 +1,153 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}JSON Data - {{ page.title|default:page.url }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 style="margin-bottom: 1rem;">
+                📋 Complete JSON Data
+            </h1>
+            
+            <div class="action-buttons" style="margin-bottom: 1rem;">
+                <a href="{% url 'dashboard:page_detail' page.id %}" class="btn btn-secondary">← Back to Page</a>
+                <a href="{% url 'dashboard:page_json' page.id %}?format=raw" class="btn btn-primary" target="_blank">
+                    📥 Download Raw JSON
+                </a>
+                <button onclick="copyToClipboard()" class="btn btn-primary">
+                    📋 Copy to Clipboard
+                </button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        Page: {{ page.title|default:page.url }}
+                    </h5>
+                    <small class="text-muted">Page ID: {{ page.id }}</small>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <pre id="json-content" style="margin: 0; padding: 1.5rem; background: #f8f9fa; overflow-x: auto; max-height: 80vh;"><code class="language-json">{{ json_data }}</code></pre>
+                </div>
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <p class="text-muted">
+                    <strong>Note:</strong> This view shows all metadata and content stored for this page.
+                    Add <code>?format=raw</code> to the URL to get pure JSON (useful for API integration).
+                </p>
+                <p class="text-muted">
+                    <strong>API Endpoint:</strong> 
+                    <code>{{ request.scheme }}://{{ request.get_host }}{% url 'dashboard:page_json' page.id %}?format=raw</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    
+    code {
+        color: #333;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        text-decoration: none;
+        display: inline-block;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+    }
+    
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #0056b3;
+        color: white;
+    }
+    
+    .card {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+    
+    .card-header {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .card-header h5 {
+        margin: 0 0 0.25rem 0;
+    }
+</style>
+
+<script>
+function copyToClipboard() {
+    const jsonContent = document.getElementById('json-content').textContent;
+    
+    // Use modern clipboard API if available
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(jsonContent).then(function() {
+            alert('JSON copied to clipboard!');
+        }, function(err) {
+            console.error('Failed to copy: ', err);
+            fallbackCopy(jsonContent);
+        });
+    } else {
+        fallbackCopy(jsonContent);
+    }
+}
+
+function fallbackCopy(text) {
+    // Fallback for older browsers
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        alert('JSON copied to clipboard!');
+    } catch (err) {
+        alert('Failed to copy. Please select and copy manually.');
+        console.error('Fallback copy failed: ', err);
+    }
+    
+    document.body.removeChild(textArea);
+}
+</script>
+{% endblock %}
+

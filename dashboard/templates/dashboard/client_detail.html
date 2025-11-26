@@ -1,0 +1,91 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ client.name }} - DocAnalyzer{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="margin: 0;">{{ client.name }}</h1>
+    <a href="{% url 'dashboard:client_pages' client.id %}" 
+       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+        📊 View All Pages & AI Scores
+    </a>
+</div>
+
+<div class="stats">
+    <div class="stat-card">
+        <h3>Total Jobs</h3>
+        <div class="value">{{ jobs.count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Completed Jobs</h3>
+        <div class="value">{{ completed_jobs }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Failed Jobs</h3>
+        <div class="value">{{ failed_jobs }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Total Pages</h3>
+        <div class="value">{{ total_pages }}</div>
+        <div class="subtext">
+            <a href="{% url 'dashboard:client_pages' client.id %}" style="color: #667eea; text-decoration: none; font-weight: 600;">
+                View Details →
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Client Information</h2>
+    <table>
+        <tr>
+            <th style="width: 200px;">Contact Email</th>
+            <td>{{ client.contact_email }}</td>
+        </tr>
+        <tr>
+            <th>Active</th>
+            <td>{% if client.is_active %}Yes{% else %}No{% endif %}</td>
+        </tr>
+        <tr>
+            <th>Created</th>
+            <td>{{ client.created_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% if client.webhook_url %}
+        <tr>
+            <th>Webhook URL</th>
+            <td>{{ client.webhook_url }}</td>
+        </tr>
+        {% endif %}
+    </table>
+</div>
+
+<div class="card">
+    <h2>Crawl Jobs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Target URL</th>
+                <th>Status</th>
+                <th>Pages</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for job in jobs %}
+            <tr>
+                <td><a href="{% url 'dashboard:job_detail' job.id %}">#{{ job.id }}</a></td>
+                <td>{{ job.target_url|truncatechars:50 }}</td>
+                <td><span class="badge badge-{{ job.status }}">{{ job.get_status_display }}</span></td>
+                <td>{{ job.stats.pages_crawled|default:0 }}</td>
+                <td>{{ job.created_at|date:"M d, Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #7f8c8d;">No crawl jobs yet</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

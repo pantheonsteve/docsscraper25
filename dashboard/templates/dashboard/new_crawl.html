@@ -1,0 +1,252 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}New Crawl - DocAnalyzer{% endblock %}
+
+{% block content %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+    
+    .form-group input, .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #ecf0f1;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .form-group small {
+        display: block;
+        margin-top: 0.25rem;
+        color: #7f8c8d;
+        font-size: 0.875rem;
+    }
+    
+    .btn-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-cancel {
+        background: #95a5a6;
+        color: white;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        margin-top: 1rem;
+        width: 100%;
+        transition: background 0.2s;
+    }
+    
+    .btn-cancel:hover {
+        background: #7f8c8d;
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="font-size: 2rem; font-weight: 800; color: #2c3e50; margin-bottom: 0.5rem;">Start New Crawl</h1>
+    <p style="color: #7f8c8d;">Configure and launch a documentation crawl job</p>
+    
+    {% if approved_config %}
+    <div style="background: #d4edda; border: 2px solid #28a745; border-radius: 8px; padding: 1rem; margin-top: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <strong style="color: #155724;">✅ Using AI-Optimized Configuration:</strong>
+        <div style="font-size: 0.875rem; color: #155724; margin-top: 0.5rem;">
+            {{ approved_config.name }}
+        </div>
+        <div style="font-size: 0.75rem; color: #155724; margin-top: 0.25rem;">
+            This crawl will use smart selectors to exclude navigation and extract only the important content.
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="form-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if approved_config %}
+        <input type="hidden" name="crawl_config_id" value="{{ approved_config.id }}">
+        {% endif %}
+        
+        <div class="form-group">
+            <label for="client_id">Client *</label>
+            <select name="client_id" id="client_id" required onchange="toggleNewClientInput()">
+                <option value="">Select a client...</option>
+                {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.name }}</option>
+                {% endfor %}
+                <option value="__new__">+ Create New Client</option>
+            </select>
+            <small>Who is this crawl for?</small>
+            
+            <!-- New client input (hidden by default) -->
+            <div id="newClientInput" style="display: none; margin-top: 1rem; padding: 1rem; background: #e8f4f8; border-radius: 8px;">
+                <label for="new_client_name" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">New Client Name:</label>
+                <input type="text" id="new_client_name" name="new_client_name" 
+                       placeholder="Enter client name" 
+                       style="width: 100%; padding: 0.75rem; border: 2px solid #3498db; border-radius: 4px;">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="target_url">Target URL *</label>
+            <input type="url" name="target_url" id="target_url" 
+                   placeholder="https://docs.example.com" required>
+            <small>The starting URL for the crawl</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="depth_limit">Depth Limit</label>
+            <input type="number" name="depth_limit" id="depth_limit" 
+                   value="5" min="1" max="10">
+            <small>Maximum crawl depth (1-10)</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="use_playwright">JavaScript Rendering</label>
+            <select name="use_playwright" id="use_playwright">
+                <option value="auto" selected>Auto-detect</option>
+                <option value="always">Always (for SPAs)</option>
+                <option value="never">Never (faster)</option>
+            </select>
+            <small>Whether to use Playwright for JavaScript-heavy sites</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="max_pages">Page Limit (Optional)</label>
+            <input type="number" name="max_pages" id="max_pages" 
+                   placeholder="Leave empty for unlimited" min="1">
+            <small>Limit the number of pages to crawl (useful for testing)</small>
+        </div>
+        
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" name="capture_html" id="capture_html" 
+                   style="width: auto; margin: 0;">
+            <label for="capture_html" style="margin: 0; font-weight: 600;">
+                Capture Raw HTML
+            </label>
+        </div>
+        <small style="display: block; margin-top: -1rem; margin-bottom: 1rem; color: #7f8c8d;">
+            Store the original HTML for each page (useful for reprocessing)
+        </small>
+        
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+            <input type="checkbox" name="screenshots" id="screenshots" 
+                   style="width: auto; margin: 0;">
+            <label for="screenshots" style="margin: 0; font-weight: 600;">
+                Capture Screenshots
+            </label>
+        </div>
+        <small style="display: block; margin-top: -1rem; margin-bottom: 1.5rem; color: #7f8c8d;">
+            Take full-page screenshots (requires Playwright, adds 1-3s per page)
+        </small>
+        
+        <div style="background: #e8f4fd; padding: 1rem; border-radius: 8px; border-left: 4px solid #2196f3; margin-bottom: 1.5rem;">
+            <strong style="color: #1976d2;">💡 Tip:</strong>
+            <p style="margin: 0.5rem 0 0 0; color: #555; font-size: 0.9rem;">
+                For testing, use a small page limit (e.g., 5-10 pages) to quickly validate your configuration before running a full crawl.
+            </p>
+        </div>
+        
+        <button type="submit" class="btn-submit">🚀 Start Crawl</button>
+        <a href="{% url 'dashboard:index' %}" class="btn-cancel">Cancel</a>
+    </form>
+</div>
+
+<script>
+// Toggle new client input
+function toggleNewClientInput() {
+    const clientSelect = document.getElementById('client_id');
+    const newClientDiv = document.getElementById('newClientInput');
+    const newClientInput = document.getElementById('new_client_name');
+    
+    if (clientSelect.value === '__new__') {
+        newClientDiv.style.display = 'block';
+        newClientInput.required = true;
+    } else {
+        newClientDiv.style.display = 'none';
+        newClientInput.required = false;
+    }
+}
+
+// Auto-enable Playwright when screenshots are checked
+document.getElementById('screenshots').addEventListener('change', function(e) {
+    if (e.target.checked) {
+        const playwrightSelect = document.getElementById('use_playwright');
+        if (playwrightSelect.value === 'never') {
+            playwrightSelect.value = 'auto';
+        }
+    }
+});
+
+</script>
+
+{% endblock %}
+

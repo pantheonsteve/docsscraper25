@@ -1,0 +1,323 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ client.name }} - All Pages{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1 style="margin: 0;">{{ client.name }} - Crawled Pages</h1>
+    <p style="color: #7f8c8d; margin-top: 0.5rem;">
+        <a href="{% url 'dashboard:client_detail' client.id %}">← Back to Client Overview</a>
+    </p>
+</div>
+
+<div class="stats" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <h3>Total Pages</h3>
+        <div class="value">{{ total_count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Overall AI Score</h3>
+        <div class="value" style="color: {% if overall_ai_score >= 70 %}#27ae60{% elif overall_ai_score >= 50 %}#3498db{% elif overall_ai_score >= 30 %}#f39c12{% else %}#e74c3c{% endif %};">{{ overall_ai_score }}%</div>
+    </div>
+    <div class="stat-card">
+        <h3>Avg Word Count</h3>
+        <div class="value">{{ avg_word_count }}</div>
+    </div>
+    {% if avg_readability %}
+    <div class="stat-card">
+        <h3>Avg Readability</h3>
+        <div class="value">{{ avg_readability }}</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- AI-Era SEO Score Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="card" style="padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <h3 style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">E-E-A-T Score</h3>
+        <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">{{ eeat_percentage }}%</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ pages_with_author }} pages with authors</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ pages_with_references }} with references</div>
+    </div>
+    
+    <div class="card" style="padding: 1.5rem; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white;">
+        <h3 style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">RAG Readiness</h3>
+        <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">{{ rag_percentage }}%</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ pages_with_prerequisites }} with prerequisites</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ pages_with_qa }} with Q&A pairs</div>
+    </div>
+    
+    <div class="card" style="padding: 1.5rem; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+        <h3 style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Accessibility</h3>
+        <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">{{ accessibility_percentage }}%</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ pages_mobile_ready }} mobile-ready</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ avg_alt_text_quality }}% alt text quality</div>
+    </div>
+    
+    <div class="card" style="padding: 1.5rem; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+        <h3 style="font-size: 0.875rem; opacity: 0.9; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;">Content Quality</h3>
+        <div style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem;">{{ quality_percentage }}%</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ pages_with_examples }} with examples</div>
+        <div style="font-size: 0.875rem; opacity: 0.9;">{{ avg_content_diversity }}/5 avg diversity</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2>Filters & Search</h2>
+    <form method="get" action="">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            
+            <!-- Search -->
+            <div>
+                <label for="search" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Search</label>
+                <input type="text" id="search" name="q" value="{{ current_search }}"
+                       placeholder="Title, URL, or content..."
+                       style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;"
+                       autofocus>
+            </div>
+            
+            <!-- Doc Type -->
+            <div>
+                <label for="doc-type" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Document Type</label>
+                <select id="doc-type" name="doc_type" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">All Types</option>
+                    {% for doc_type in doc_types %}
+                    <option value="{{ doc_type }}" {% if doc_type == current_doc_type %}selected{% endif %}>
+                        {{ doc_type|default:"unknown" }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Job -->
+            <div>
+                <label for="job" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Crawl Job</label>
+                <select id="job" name="job" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">All Jobs</option>
+                    {% for job in jobs %}
+                    <option value="{{ job.id }}" {% if job.id|stringformat:"s" == current_job %}selected{% endif %}>
+                        Job #{{ job.id }} - {{ job.created_at|date:"M d, Y" }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Depth -->
+            <div>
+                <label for="depth" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Depth</label>
+                <select id="depth" name="depth" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">All Depths</option>
+                    {% for depth in depths %}
+                    <option value="{{ depth }}" {% if depth|stringformat:"s" == current_depth %}selected{% endif %}>
+                        Depth {{ depth }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Quality -->
+            <div>
+                <label for="quality" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Quality</label>
+                <select id="quality" name="quality" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">All Quality</option>
+                    <option value="high" {% if current_quality == 'high' %}selected{% endif %}>High Quality</option>
+                    <option value="low" {% if current_quality == 'low' %}selected{% endif %}>Low Quality</option>
+                </select>
+            </div>
+            
+            <!-- Sort -->
+            <div>
+                <label for="sort" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Sort By</label>
+                <select id="sort" name="sort" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="-crawled_at" {% if current_sort == '-crawled_at' %}selected{% endif %}>Newest First</option>
+                    <option value="crawled_at" {% if current_sort == 'crawled_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Title (A-Z)</option>
+                    <option value="-title" {% if current_sort == '-title' %}selected{% endif %}>Title (Z-A)</option>
+                    <option value="-word_count" {% if current_sort == '-word_count' %}selected{% endif %}>Most Words</option>
+                    <option value="word_count" {% if current_sort == 'word_count' %}selected{% endif %}>Fewest Words</option>
+                    <option value="-readability_score" {% if current_sort == '-readability_score' %}selected{% endif %}>Most Readable</option>
+                    <option value="readability_score" {% if current_sort == 'readability_score' %}selected{% endif %}>Least Readable</option>
+                    <option value="depth" {% if current_sort == 'depth' %}selected{% endif %}>Shallowest First</option>
+                    <option value="-depth" {% if current_sort == '-depth' %}selected{% endif %}>Deepest First</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <div style="display: flex; gap: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="has_examples" value="true" {% if current_has_examples == 'true' %}checked{% endif %}>
+                    <span>Has Examples</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="checkbox" name="has_code" value="true" {% if current_has_code == 'true' %}checked{% endif %}>
+                    <span>Has Code Blocks</span>
+                </label>
+            </div>
+            <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+                <button type="submit" style="background: #3498db; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                    Apply Filters
+                </button>
+                <a href="{% url 'dashboard:client_pages' client.id %}" 
+                   style="background: #95a5a6; color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 4px; font-weight: 600; display: inline-block;">
+                    Clear All
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Pages Table -->
+<div class="card">
+    <h2>Pages ({{ total_count }} total)</h2>
+    <div style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="min-width: 200px;">
+                        <a href="?sort={% if current_sort == 'url' %}-url{% else %}url{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                            URL
+                            {% if current_sort == 'url' %}▲{% elif current_sort == '-url' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?sort={% if current_sort == 'title' %}-title{% else %}title{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                            Title
+                            {% if current_sort == 'title' %}▲{% elif current_sort == '-title' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?sort={% if current_sort == 'doc_type' %}-doc_type{% else %}doc_type{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                            Type
+                            {% if current_sort == 'doc_type' %}▲{% elif current_sort == '-doc_type' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?sort={% if current_sort == 'depth' %}-depth{% else %}depth{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                            Depth
+                            {% if current_sort == 'depth' %}▲{% elif current_sort == '-depth' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th style="text-align: right;">
+                        <a href="?sort={% if current_sort == 'word_count' %}-word_count{% else %}word_count{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem; justify-content: flex-end;">
+                            Words
+                            {% if current_sort == 'word_count' %}▲{% elif current_sort == '-word_count' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th style="text-align: right;">
+                        <a href="?sort={% if current_sort == 'readability_score' %}-readability_score{% else %}readability_score{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem; justify-content: flex-end;">
+                            Readability
+                            {% if current_sort == 'readability_score' %}▲{% elif current_sort == '-readability_score' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>Features</th>
+                    <th>
+                        <a href="?sort={% if current_sort == 'crawled_at' %}-crawled_at{% else %}crawled_at{% endif %}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}"
+                           style="color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+                            Crawled
+                            {% if current_sort == 'crawled_at' %}▲{% elif current_sort == '-crawled_at' %}▼{% endif %}
+                        </a>
+                    </th>
+                    <th>Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for page in page_obj %}
+                <tr>
+                    <td>
+                        <a href="{{ page.url }}" target="_blank" style="font-size: 0.9rem; word-break: break-all;">
+                            {{ page.url|truncatechars:80 }}
+                        </a>
+                    </td>
+                    <td style="max-width: 300px;">{{ page.title|truncatechars:60 }}</td>
+                    <td>
+                        <span style="font-size: 0.85rem; padding: 0.25rem 0.5rem; background: #ecf0f1; border-radius: 3px;">
+                            {{ page.doc_type|default:"unknown" }}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">{{ page.depth }}</td>
+                    <td style="text-align: right;">{{ page.word_count }}</td>
+                    <td style="text-align: right;">
+                        {% if page.readability_score %}
+                            <span style="{% if page.readability_score >= 60 %}color: #27ae60;{% elif page.readability_score < 30 %}color: #e74c3c;{% endif %}">
+                                {{ page.readability_score|floatformat:1 }}
+                            </span>
+                        {% else %}
+                            <span style="color: #95a5a6;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.25rem; flex-wrap: wrap;">
+                            {% if page.has_examples %}
+                            <span style="font-size: 0.75rem; padding: 0.125rem 0.375rem; background: #3498db; color: white; border-radius: 2px;">Examples</span>
+                            {% endif %}
+                            {% if page.has_videos %}
+                            <span style="font-size: 0.75rem; padding: 0.125rem 0.375rem; background: #e74c3c; color: white; border-radius: 2px;">Video</span>
+                            {% endif %}
+                            {% if page.code_blocks and page.code_blocks != "[]" %}
+                            <span style="font-size: 0.75rem; padding: 0.125rem 0.375rem; background: #2c3e50; color: white; border-radius: 2px;">Code</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="white-space: nowrap; font-size: 0.85rem; color: #7f8c8d;">
+                        {{ page.crawled_at|date:"M d, H:i" }}
+                    </td>
+                    <td>
+                        <a href="{% url 'dashboard:page_detail' page.id %}" 
+                           style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.4rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
+                            📊 View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 2rem; color: #7f8c8d;">
+                        No pages found matching your filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div style="margin-top: 1.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
+    {% if page_obj.has_previous %}
+    <a href="?page=1{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+       style="padding: 0.5rem 1rem; background: #ecf0f1; border-radius: 4px; text-decoration: none; color: #2c3e50;">
+        &laquo; First
+    </a>
+    <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+       style="padding: 0.5rem 1rem; background: #3498db; color: white; border-radius: 4px; text-decoration: none;">
+        ‹ Previous
+    </a>
+    {% endif %}
+    
+    <span style="color: #7f8c8d;">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+       style="padding: 0.5rem 1rem; background: #3498db; color: white; border-radius: 4px; text-decoration: none;">
+        Next ›
+    </a>
+    <a href="?page={{ page_obj.paginator.num_pages }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_doc_type %}&doc_type={{ current_doc_type }}{% endif %}{% if current_job %}&job={{ current_job }}{% endif %}{% if current_depth %}&depth={{ current_depth }}{% endif %}{% if current_quality %}&quality={{ current_quality }}{% endif %}{% if current_has_examples %}&has_examples={{ current_has_examples }}{% endif %}{% if current_has_code %}&has_code={{ current_has_code }}{% endif %}{% if current_sort %}&sort={{ current_sort }}{% endif %}" 
+       style="padding: 0.5rem 1rem; background: #ecf0f1; border-radius: 4px; text-decoration: none; color: #2c3e50;">
+        Last &raquo;
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+

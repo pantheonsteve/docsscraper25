@@ -1,0 +1,152 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Job #{{ job.id }} Logs - DocAnalyzer{% endblock %}
+
+{% block content %}
+<style>
+    .logs-container {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 1.5rem;
+        border-radius: 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        max-height: 600px;
+        overflow-y: auto;
+        margin-top: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    .log-entry {
+        padding: 0.25rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+    
+    .log-entry:last-child {
+        border-bottom: none;
+    }
+    
+    .log-entry:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    
+    .btn-back {
+        background: #95a5a6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+    
+    .btn-back:hover {
+        background: #7f8c8d;
+    }
+    
+    .btn-refresh {
+        background: #3498db;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        display: inline-block;
+        margin-bottom: 1rem;
+        margin-left: 0.5rem;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-refresh:hover {
+        background: #2980b9;
+    }
+    
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .status-info {
+        background: white;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .status-info div {
+        margin: 0.5rem 0;
+    }
+    
+    .auto-refresh-notice {
+        color: #27ae60;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+</style>
+
+<div class="header-section">
+    <div>
+        <h1 style="margin: 0;">Job #{{ job.id }} - Live Logs</h1>
+        <p style="color: #7f8c8d; margin-top: 0.5rem;">Real-time crawl output and debugging information</p>
+    </div>
+    <div>
+        <a href="{% url 'dashboard:job_detail' job.id %}" class="btn-back">← Back to Job</a>
+        <button onclick="refreshLogs()" class="btn-refresh">🔄 Refresh</button>
+    </div>
+</div>
+
+<div class="status-info">
+    <div><strong>Status:</strong> <span class="badge badge-{{ job.status }}">{{ job.get_status_display }}</span></div>
+    <div><strong>Target URL:</strong> {{ job.target_url }}</div>
+    <div><strong>Pages Crawled:</strong> <span id="pages-count">{{ job.pages_crawled }}</span></div>
+    {% if job.status == 'running' %}
+        <div class="auto-refresh-notice">⚡ Page auto-refreshes every 5 seconds while job is running</div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Log Output ({{ logs|length }} entries)</h2>
+    
+    <div class="logs-container" id="logs-container">
+        {% if logs %}
+            {% for log in logs %}
+                <div class="log-entry">{{ log }}</div>
+            {% endfor %}
+        {% else %}
+            <div class="log-entry">No logs available yet...</div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function refreshLogs() {
+    location.reload();
+}
+
+{% if job.status == 'running' %}
+// Auto-refresh every 5 seconds if job is running
+setInterval(function() {
+    location.reload();
+}, 5000);
+{% endif %}
+
+// Auto-scroll to bottom
+const logsContainer = document.getElementById('logs-container');
+if (logsContainer) {
+    logsContainer.scrollTop = logsContainer.scrollHeight;
+}
+</script>
+
+{% endblock %}
+
+
+
+

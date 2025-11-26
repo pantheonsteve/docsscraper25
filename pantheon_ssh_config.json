@@ -1,0 +1,58 @@
+{
+  "start_url": "https://docs.pantheon.io/ssh-keys",
+  "domain": "docs.pantheon.io",
+  "samples_analyzed": 2,
+  "sample_urls": [
+    "https://docs.pantheon.io/ssh-keys",
+    "https://github.com/pantheon-systems/documentation/issues/new?title=Generate and Add SSH Keys%20Doc%20Update%20&body=Re%3A%20%5BGenerate and Add SSH Keys%5D(https%3A%2F%2Fdocs.pantheon.io%2Fssh-keys)%0A%0APriority%3A%20Low%2FMedium%2FHigh%20(choose%20one%2C%20remove%20the%20other%20options)%0A%0A%23%23%20Issue%20Description%3A%0A%0A%23%23%20Suggested%20Resolution"
+  ],
+  "selectors": {
+    "main_content_selector": "div.guide-content",
+    "exclude_selectors": [
+      "header.pds-navbar",
+      "div.guide-sidebar",
+      "nav.pds-side-nav-compact",
+      "footer.pds-site-footer"
+    ],
+    "link_selectors": {
+      "include": "article.doc a",
+      "exclude": "nav a, .pds-side-nav-compact a, .github-link, footer a",
+      "in_page_navigation": ".docs-header-anchor"
+    },
+    "accessibility_selectors": {
+      "full_content_with_toc": "div.guide-content",
+      "toc_only": "nav.pds-side-nav-compact"
+    },
+    "content_indicators": [
+      ".doc",
+      ".article",
+      ".guide-content",
+      ".content-wrapper"
+    ],
+    "navigation_indicators": [
+      ".sidenav-compact",
+      ".pds-side-nav-compact",
+      "nav",
+      "header",
+      "footer"
+    ],
+    "confidence": "high",
+    "reasoning": "The main content appears to be contained within 'div.guide-content', which has the '.doc' and '.article' classes indicating it is the primary documentation. Site navigation is in the header, sidebar 'div.guide-sidebar' with 'nav.pds-side-nav-compact' links, and footer - these should be excluded from crawling. In-page anchor links use the '.docs-header-anchor' class and should be excluded from crawling but kept for accessibility analysis of the main content area."
+  },
+  "recommended_settings": {
+    "max_depth": 5,
+    "max_pages": 1000,
+    "use_playwright": "auto",
+    "capture_html": true,
+    "screenshots": false,
+    "content_selector": "div.guide-content",
+    "exclude_selectors": [
+      "header.pds-navbar",
+      "div.guide-sidebar",
+      "nav.pds-side-nav-compact",
+      "footer.pds-site-footer"
+    ],
+    "link_selector": "article.doc a",
+    "exclude_link_selector": "nav a, .pds-side-nav-compact a, .github-link, footer a"
+  }
+}

@@ -1,0 +1,414 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Job #{{ job.id }} - DocAnalyzer{% endblock %}
+
+{% block content %}
+<style>
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-action {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-cancel {
+        background: #e74c3c;
+        color: white;
+    }
+    
+    .btn-cancel:hover {
+        background: #c0392b;
+        box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+    }
+    
+    .btn-restart {
+        background: #3498db;
+        color: white;
+    }
+    
+    .btn-restart:hover {
+        background: #2980b9;
+        box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+    }
+    
+    .btn-delete {
+        background: #7f8c8d;
+        color: white;
+    }
+    
+    .btn-delete:hover {
+        background: #5a6268;
+        box-shadow: 0 4px 12px rgba(127, 140, 141, 0.4);
+    }
+    
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .alert-warning {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+</style>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="margin: 0;">
+            Crawl Job #{{ job.id }}
+            <span class="badge badge-{{ job.status }}">{{ job.get_status_display }}</span>
+        </h1>
+        {% if job.status == 'running' %}
+        <div id="live-indicator" style="display: flex; align-items: center; color: #27ae60; margin-top: 0.5rem;">
+            <span style="display: inline-block; width: 8px; height: 8px; background: #27ae60; border-radius: 50%; margin-right: 8px; animation: pulse 2s infinite;"></span>
+            Live Updates
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <a href="{% url 'dashboard:job_logs' job.id %}" class="btn-action" style="background: #27ae60; color: white;">
+            📋 View Logs
+        </a>
+        
+        {% if job.status == 'running' or job.status == 'pending' %}
+            <form method="post" action="{% url 'dashboard:cancel_job' job.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn-action btn-cancel" 
+                        onclick="return confirm('Are you sure you want to cancel this job?');">
+                    ⏸️ Cancel
+                </button>
+            </form>
+        {% endif %}
+        
+        {% if job.status == 'completed' or job.status == 'failed' or job.status == 'cancelled' %}
+            <form method="post" action="{% url 'dashboard:restart_job' job.id %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="btn-action btn-restart">
+                    🔄 Restart
+                </button>
+            </form>
+        {% endif %}
+        
+        <form method="post" action="{% url 'dashboard:delete_job' job.id %}" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" class="btn-action btn-delete" 
+                    onclick="return confirm('Are you sure you want to DELETE this job and all its data? This cannot be undone!');">
+                🗑️ Delete
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat-card">
+        <h3>Pages Crawled</h3>
+        <div class="value" id="page-count">{{ page_count }}</div>
+        <div class="subtext">{{ unique_count }} unique</div>
+    </div>
+    <div class="stat-card">
+        <h3>Duplicates</h3>
+        <div class="value" id="duplicate-count">{{ duplicate_count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Errors</h3>
+        <div class="value" id="error-count">{{ error_count }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Speed</h3>
+        <div class="value" id="pages-per-minute">{{ pages_per_minute }}</div>
+        <div class="subtext">pages/min</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Job Details</h2>
+    <table>
+        <tr>
+            <th style="width: 200px;">Client</th>
+            <td><a href="{% url 'dashboard:client_detail' job.client.id %}">{{ job.client.name }}</a></td>
+        </tr>
+        <tr>
+            <th>Target URL</th>
+            <td><a href="{{ job.target_url }}" target="_blank">{{ job.target_url }}</a></td>
+        </tr>
+        <tr>
+            <th>Created</th>
+            <td>{{ job.created_at|date:"M d, Y H:i:s" }}</td>
+        </tr>
+        {% if job.started_at %}
+        <tr>
+            <th>Started</th>
+            <td>{{ job.started_at|date:"M d, Y H:i:s" }}</td>
+        </tr>
+        {% endif %}
+        {% if job.completed_at %}
+        <tr>
+            <th>Completed</th>
+            <td>{{ job.completed_at|date:"M d, Y H:i:s" }}</td>
+        </tr>
+        <tr>
+            <th>Duration</th>
+            <td>{{ job.get_duration|floatformat:0 }} seconds</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <th>Max Depth</th>
+            <td>{{ job.config.depth_limit|default:5 }}</td>
+        </tr>
+        <tr>
+            <th>Page Limit</th>
+            <td>
+                {% if job.config.max_pages %}
+                    {{ job.config.max_pages }} pages
+                    <span style="background: #f39c12; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Test Mode</span>
+                {% else %}
+                    Unlimited
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Playwright</th>
+            <td>
+                {% if job.config.use_playwright == 'always' %}
+                    Always (JavaScript rendering enabled)
+                {% elif job.config.use_playwright == 'never' %}
+                    Never (Faster crawling)
+                {% else %}
+                    Auto-detect
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Raw HTML Capture</th>
+            <td>
+                {% if job.config.capture_html %}
+                    <span style="color: #27ae60; font-weight: 600;">✓ Enabled</span>
+                {% else %}
+                    <span style="color: #95a5a6;">✗ Disabled</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Screenshots</th>
+            <td>
+                {% if job.config.screenshots %}
+                    <span style="color: #27ae60; font-weight: 600;">✓ Enabled</span>
+                    <span style="color: #7f8c8d; font-size: 0.85rem; margin-left: 0.5rem;">(+1-3s per page)</span>
+                {% else %}
+                    <span style="color: #95a5a6;">✗ Disabled</span>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem;">
+    <div class="card">
+        <h2>Quality Metrics</h2>
+        <table>
+            <tr>
+                <th>Avg Word Count</th>
+                <td>{{ avg_word_count }}</td>
+            </tr>
+            {% if avg_readability %}
+            <tr>
+                <th>Avg Readability</th>
+                <td>{{ avg_readability }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>Pages with Examples</th>
+                <td>{{ pages_with_examples }}</td>
+            </tr>
+            <tr>
+                <th>Pages with Code</th>
+                <td>{{ pages_with_code }}</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if depth_distribution %}
+    <div class="card">
+        <h2>Depth Distribution</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Depth</th>
+                    <th>Pages</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in depth_distribution %}
+                <tr>
+                    <td>{{ item.depth }}</td>
+                    <td>{{ item.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+{% if doc_type_distribution %}
+<div class="card">
+    <h2>Document Type Distribution</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Count</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in doc_type_distribution %}
+            <tr>
+                <td>{{ item.doc_type|default:"unknown" }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.percentage }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if error_types %}
+<div class="card">
+    <h2>Error Types</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Error Type</th>
+                <th>Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for error in error_types %}
+            <tr>
+                <td>{{ error.error_type }}</td>
+                <td>{{ error.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Recent Pages <span id="recent-pages-indicator" style="font-size: 0.8rem; color: #7f8c8d;"></span></h2>
+    <table id="recent-pages-table">
+        <thead>
+            <tr>
+                <th>URL</th>
+                <th>Type</th>
+                <th>Depth</th>
+                <th>Title</th>
+                <th>Words</th>
+                <th>Crawled</th>
+                <th>Analysis</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for page in sample_pages %}
+            <tr>
+                <td><a href="{{ page.url }}" target="_blank">{{ page.url|truncatechars:60 }}</a></td>
+                <td><span style="font-size: 0.85rem; color: #7f8c8d;">{{ page.doc_type }}</span></td>
+                <td>{{ page.depth }}</td>
+                <td>{{ page.title|truncatechars:40 }}</td>
+                <td>{{ page.word_count }}</td>
+                <td>{{ page.crawled_at|date:"M d, H:i" }}</td>
+                <td><a href="{% url 'dashboard:page_detail' page.id %}" style="background: #667eea; color: white; padding: 0.4rem 0.8rem; border-radius: 6px; text-decoration: none; font-size: 0.85rem;">View</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #7f8c8d;">No pages crawled yet</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if job.status == 'running' %}
+<script>
+// Real-time updates for running jobs
+let updateInterval;
+
+function updateStats() {
+    fetch('{% url "dashboard:job_stats_api" job.id %}')
+        .then(response => response.json())
+        .then(data => {
+            // Update stat cards
+            document.getElementById('page-count').textContent = data.page_count;
+            document.getElementById('duplicate-count').textContent = data.duplicate_count;
+            document.getElementById('error-count').textContent = data.error_count;
+            document.getElementById('pages-per-minute').textContent = data.pages_per_minute;
+            
+            // Update indicator
+            const now = new Date();
+            document.getElementById('recent-pages-indicator').textContent = 
+                `(updated ${now.toLocaleTimeString()})`;
+            
+            // If job completed, stop polling and reload page
+            if (data.status !== 'running') {
+                clearInterval(updateInterval);
+                setTimeout(() => location.reload(), 2000);
+            }
+        })
+        .catch(error => console.error('Error fetching stats:', error));
+}
+
+// Update every 3 seconds
+updateInterval = setInterval(updateStats, 3000);
+
+// Clean up on page unload
+window.addEventListener('beforeunload', () => {
+    if (updateInterval) {
+        clearInterval(updateInterval);
+    }
+});
+</script>
+
+<style>
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+</style>
+{% endif %}
+{% endblock %}

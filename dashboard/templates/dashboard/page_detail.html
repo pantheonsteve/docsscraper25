@@ -1,0 +1,1137 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ page.title }} - Page Analysis{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+    }
+    
+    .page-header h1 {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+    }
+    
+    .page-header .url {
+        opacity: 0.9;
+        font-size: 0.95rem;
+        word-break: break-all;
+        margin-bottom: 1rem;
+    }
+    
+    .page-header .meta {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .overall-score {
+        background: white;
+        padding: 2.5rem;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    
+    .overall-score h2 {
+        color: #2c3e50;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .score-circle {
+        width: 200px;
+        height: 200px;
+        margin: 0 auto 1rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        font-weight: 800;
+        position: relative;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    }
+    
+    .score-circle.excellent { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
+    .score-circle.good { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+    .score-circle.fair { background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); color: white; }
+    .score-circle.poor { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+    
+    .score-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .score-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .score-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    
+    .score-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .score-card h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2c3e50;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #2c3e50;
+    }
+    
+    .score-bar {
+        height: 12px;
+        background: #ecf0f1;
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 0.75rem;
+    }
+    
+    .score-bar-fill {
+        height: 100%;
+        transition: width 1s ease;
+        border-radius: 6px;
+    }
+    
+    .score-bar-fill.excellent { background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%); }
+    .score-bar-fill.good { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); }
+    .score-bar-fill.fair { background: linear-gradient(90deg, #fbc2eb 0%, #a6c1ee 100%); }
+    .score-bar-fill.poor { background: linear-gradient(90deg, #fa709a 0%, #fee140 100%); }
+    
+    .metrics-section {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    }
+    
+    .metrics-section h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 3px solid #667eea;
+    }
+    
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .metric-item {
+        padding: 1rem;
+        border-left: 4px solid #ecf0f1;
+        background: #f8f9fa;
+        border-radius: 6px;
+    }
+    
+    .metric-item.present { border-left-color: #27ae60; background: #eafaf1; }
+    .metric-item.partial { border-left-color: #f39c12; background: #fef5e7; }
+    .metric-item.missing { border-left-color: #e74c3c; background: #fadbd8; }
+    
+    .metric-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #7f8c8d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .metric-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .metric-detail {
+        font-size: 0.875rem;
+        color: #7f8c8d;
+        margin-top: 0.5rem;
+    }
+    
+    .badge-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .badge-status.present { background: #27ae60; color: white; }
+    .badge-status.missing { background: #e74c3c; color: white; }
+    .badge-status.partial { background: #f39c12; color: white; }
+    
+    .badge-status::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+    
+    .list-items {
+        list-style: none;
+        padding: 0;
+        margin-top: 1rem;
+    }
+    
+    .list-items li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #ecf0f1;
+    }
+    
+    .list-items li:last-child {
+        border-bottom: none;
+    }
+    
+    .placeholder {
+        font-style: italic;
+        color: #95a5a6;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border: 2px dashed #dee2e6;
+        text-align: center;
+    }
+    
+    .json-display {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 1rem;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+        background: #95a5a6;
+        color: white;
+    }
+    
+    .btn-secondary:hover {
+        background: #7f8c8d;
+    }
+    
+    .collapsible-section {
+        margin-bottom: 1rem;
+    }
+    
+    .collapsible-header {
+        background: #f8f9fa;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        color: #2c3e50;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+    }
+    
+    .collapsible-header:hover {
+        background: #e9ecef;
+    }
+    
+    .collapsible-content {
+        padding: 1.5rem;
+        display: none;
+    }
+    
+    .collapsible-content.active {
+        display: block;
+    }
+    
+    .toggle-icon {
+        transition: transform 0.3s;
+    }
+    
+    .toggle-icon.active {
+        transform: rotate(180deg);
+    }
+</style>
+
+<div class="page-header">
+    <div class="action-buttons" style="margin-bottom: 1rem;">
+        <a href="{% url 'dashboard:job_detail' page.job.id %}" class="btn btn-secondary">← Back to Job</a>
+        <a href="{{ page.url }}" target="_blank" class="btn btn-primary">View Live Page →</a>
+        <a href="{% url 'dashboard:page_json' page.id %}" class="btn btn-primary">📋 View JSON</a>
+        {% if page.raw_html %}
+            <a href="{% url 'dashboard:page_raw_html' page.id %}" class="btn btn-primary">📄 View Raw HTML</a>
+        {% endif %}
+        {% if page.screenshot_path %}
+            <a href="#screenshot" onclick="showScreenshot()" class="btn btn-primary">📸 View Screenshot</a>
+        {% else %}
+            <form method="post" action="{% url 'dashboard:capture_page_screenshot' page.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" style="background: #f39c12;">
+                    📸 Capture Screenshot
+                </button>
+            </form>
+        {% endif %}
+    </div>
+    
+    <h1>{{ page.title|default:"Untitled Page" }}</h1>
+    <div class="url">{{ page.url }}</div>
+    
+    <div class="meta">
+        <div><strong>Doc Type:</strong> {{ page.get_doc_type_display }}</div>
+        <div><strong>Depth:</strong> {{ page.depth }}</div>
+        <div><strong>Word Count:</strong> {{ page.word_count|default:"0" }}</div>
+        <div><strong>Crawled:</strong> {{ page.crawled_at|date:"M d, Y" }}</div>
+    </div>
+</div>
+
+<!-- Overall AI Readiness Score -->
+<div class="overall-score">
+    <h2>Overall AI Readiness Score</h2>
+    <div class="score-circle {% if overall_ai_readiness >= 80 %}excellent{% elif overall_ai_readiness >= 60 %}good{% elif overall_ai_readiness >= 40 %}fair{% else %}poor{% endif %}">
+        {{ overall_ai_readiness|floatformat:0 }}
+    </div>
+    <p style="color: #7f8c8d; font-size: 0.95rem;">How well this page performs for AI discovery and modern SEO</p>
+</div>
+
+<!-- Score Cards -->
+<div class="score-grid">
+    <div class="score-card">
+        <div class="score-card-header">
+            <h3>E-E-A-T Score</h3>
+        </div>
+        <div class="score-value">{{ eeat_score|floatformat:0 }}</div>
+        <div class="score-bar">
+            <div class="score-bar-fill {% if eeat_score >= 80 %}excellent{% elif eeat_score >= 60 %}good{% elif eeat_score >= 40 %}fair{% else %}poor{% endif %}" 
+                 style="width: {{ eeat_score }}%"></div>
+        </div>
+        <p style="color: #7f8c8d; font-size: 0.85rem; margin-top: 0.75rem;">Experience, Expertise, Authoritativeness, Trust</p>
+    </div>
+    
+    <div class="score-card">
+        <div class="score-card-header">
+            <h3>RAG Readiness</h3>
+        </div>
+        <div class="score-value">{{ rag_readiness_score|floatformat:0 }}</div>
+        <div class="score-bar">
+            <div class="score-bar-fill {% if rag_readiness_score >= 80 %}excellent{% elif rag_readiness_score >= 60 %}good{% elif rag_readiness_score >= 40 %}fair{% else %}poor{% endif %}" 
+                 style="width: {{ rag_readiness_score }}%"></div>
+        </div>
+        <p style="color: #7f8c8d; font-size: 0.85rem; margin-top: 0.75rem;">AI Retrieval Augmented Generation optimization</p>
+    </div>
+    
+    <div class="score-card">
+        <div class="score-card-header">
+            <h3>Accessibility</h3>
+        </div>
+        <div class="score-value">{{ accessibility_score|floatformat:0 }}</div>
+        <div class="score-bar">
+            <div class="score-bar-fill {% if accessibility_score >= 80 %}excellent{% elif accessibility_score >= 60 %}good{% elif accessibility_score >= 40 %}fair{% else %}poor{% endif %}" 
+                 style="width: {{ accessibility_score }}%"></div>
+        </div>
+        <p style="color: #7f8c8d; font-size: 0.85rem; margin-top: 0.75rem;">WCAG compliance and UX quality</p>
+    </div>
+    
+    <div class="score-card">
+        <div class="score-card-header">
+            <h3>Content Quality</h3>
+        </div>
+        <div class="score-value">{{ content_quality_score|floatformat:0 }}</div>
+        <div class="score-bar">
+            <div class="score-bar-fill {% if content_quality_score >= 80 %}excellent{% elif content_quality_score >= 60 %}good{% elif content_quality_score >= 40 %}fair{% else %}poor{% endif %}" 
+                 style="width: {{ content_quality_score }}%"></div>
+        </div>
+        <p style="color: #7f8c8d; font-size: 0.85rem; margin-top: 0.75rem;">Comprehensiveness and engagement</p>
+    </div>
+</div>
+
+<!-- Screenshot (if available) -->
+{% if page.screenshot_path %}
+<div class="metrics-section" id="screenshot-section" style="display: none;">
+    <h2>📸 Screenshot</h2>
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; text-align: center;">
+        <img src="{% url 'dashboard:page_screenshot' page.id %}" 
+             alt="Screenshot of {{ page.title }}" 
+             style="max-width: 100%; border: 1px solid #dee2e6; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <div style="margin-top: 1rem;">
+            <a href="{% url 'dashboard:page_screenshot' page.id %}" target="_blank" class="btn btn-primary">
+                Open Full Size →
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Content Preview -->
+<div class="metrics-section">
+    <h2>📄 Content Preview</h2>
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1rem;">
+        <div style="margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #dee2e6;">
+            <h3 style="font-size: 1.1rem; color: #2c3e50; margin-bottom: 0.5rem;">{{ page.title|default:"Untitled Page" }}</h3>
+            {% if page.meta_description %}
+                <p style="color: #7f8c8d; font-style: italic; margin-bottom: 0.5rem;">{{ page.meta_description }}</p>
+            {% endif %}
+        </div>
+
+        {% if page.breadcrumb %}
+            <div style="margin-bottom: 1rem;">
+                <strong style="font-size: 0.875rem; color: #7f8c8d;">Breadcrumb:</strong>
+                <span style="color: #95a5a6;">
+                    {% for crumb in page.breadcrumb %}
+                        {{ crumb }}{% if not forloop.last %} › {% endif %}
+                    {% endfor %}
+                </span>
+            </div>
+        {% endif %}
+
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleCollapse(this)">
+                <span>View Main Content ({{ page.word_count }} words)</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div style="background: white; padding: 1.5rem; border-radius: 6px; max-height: 400px; overflow-y: auto; line-height: 1.6; white-space: pre-wrap;">{{ page.main_content|truncatewords:500 }}</div>
+                {% if page.main_content|wordcount > 500 %}
+                    <div style="margin-top: 0.5rem; text-align: center;">
+                        <em style="color: #7f8c8d; font-size: 0.875rem;">Content truncated. Full content contains {{ page.word_count }} words.</em>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if page.headers %}
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleCollapse(this)">
+                <span>Document Structure (Headings)</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div style="background: white; padding: 1rem; border-radius: 6px;">
+                    {% for level, headings in page.headers.items %}
+                        {% if headings %}
+                            <div style="margin-bottom: 0.75rem;">
+                                <strong style="color: #667eea;">{{ level|upper }}:</strong>
+                                <ul style="margin: 0.25rem 0 0 1.5rem; padding: 0;">
+                                    {% for heading in headings %}
+                                        <li style="margin-bottom: 0.25rem; color: #2c3e50;">{{ heading }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if page.code_blocks %}
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleCollapse(this)">
+                <span>Code Examples ({{ page.code_blocks|length }} block{{ page.code_blocks|length|pluralize }})</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div style="background: white; padding: 1rem; border-radius: 6px; max-height: 400px; overflow-y: auto;">
+                    {% for block in page.code_blocks %}
+                        <div style="margin-bottom: 1rem; border-left: 4px solid #667eea; padding-left: 1rem;">
+                            {% if block.language %}
+                                <span style="background: #667eea; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">{{ block.language }}</span>
+                            {% endif %}
+                            <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 6px; overflow-x: auto; margin-top: 0.5rem; font-size: 0.875rem;"><code>{{ block.content|truncatechars:500 }}</code></pre>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if page.internal_links %}
+        <div class="collapsible-section">
+            <div class="collapsible-header" onclick="toggleCollapse(this)">
+                <span>Internal Links ({{ page.internal_links|length }})</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <div style="background: white; padding: 1rem; border-radius: 6px; max-height: 300px; overflow-y: auto;">
+                    <ul style="list-style: none; padding: 0;">
+                        {% for link in page.internal_links|slice:":50" %}
+                            <li style="padding: 0.5rem 0; border-bottom: 1px solid #ecf0f1;">
+                                <a href="{{ link.url }}" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 500;">{{ link.text|default:link.url|truncatechars:80 }}</a>
+                                <br>
+                                <small style="color: #95a5a6;">{{ link.url }}</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    {% if page.internal_links|length > 50 %}
+                        <div style="margin-top: 0.5rem; text-align: center;">
+                            <em style="color: #7f8c8d; font-size: 0.875rem;">Showing first 50 of {{ page.internal_links|length }} links</em>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- E-E-A-T Metrics -->
+<div class="metrics-section">
+    <h2>🎯 E-E-A-T Signals</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.author %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Author</div>
+            <div class="metric-value">
+                {% if page.author %}
+                    {{ page.author }}
+                {% else %}
+                    <span class="placeholder">Not specified</span>
+                {% endif %}
+            </div>
+            {% if page.author_bio %}
+                <div class="metric-detail">{{ page.author_bio|truncatewords:20 }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item {% if page.published_date %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Published Date</div>
+            <div class="metric-value">
+                {% if page.published_date %}
+                    {{ page.published_date }}
+                {% else %}
+                    <span class="placeholder">Not specified</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.last_updated_text %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Last Updated</div>
+            <div class="metric-value">
+                {% if page.last_updated_text %}
+                    {{ page.last_updated_text }}
+                {% else %}
+                    <span class="placeholder">Not specified</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.reviewed_by %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Reviewed By</div>
+            <div class="metric-value">
+                {% if page.reviewed_by %}
+                    {{ page.reviewed_by }}
+                {% else %}
+                    <span class="placeholder">No reviewer listed</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_references %}present{% else %}missing{% endif %}">
+            <div class="metric-label">External References</div>
+            <div class="metric-value">{{ page.reference_count }}</div>
+            <div class="metric-detail">
+                {% if page.reference_count > 0 %}
+                    Citations to authoritative sources
+                {% else %}
+                    No external citations found
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% if page.external_references %}
+        <div style="margin-top: 1.5rem;">
+            <h4 style="margin-bottom: 0.75rem; color: #2c3e50;">Reference List:</h4>
+            <ul class="list-items">
+                {% for ref in page.external_references %}
+                    <li>
+                        <a href="{{ ref.url }}" target="_blank">{{ ref.title|default:ref.url }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+
+<!-- RAG Optimization -->
+<div class="metrics-section">
+    <h2>🤖 RAG (AI Retrieval) Optimization</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.has_prerequisites %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Prerequisites</div>
+            <div class="metric-value">
+                {% if page.has_prerequisites %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.has_prerequisites %}
+                    Self-contained context for AI understanding
+                {% else %}
+                    Consider adding "Prerequisites" or "Before you begin" section
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_learning_objectives %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Learning Objectives</div>
+            <div class="metric-value">
+                {% if page.has_learning_objectives %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.has_learning_objectives %}
+                    Clear learning outcomes stated
+                {% else %}
+                    Consider adding "What you'll learn" section
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.qa_count > 0 %}present{% elif page.qa_count == 0 %}missing{% endif %}">
+            <div class="metric-label">Q&A Pairs</div>
+            <div class="metric-value">{{ page.qa_count }}</div>
+            <div class="metric-detail">
+                {% if page.qa_count > 0 %}
+                    Question-answer format for AI training
+                {% else %}
+                    FAQ sections improve AI discoverability
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_next_steps %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Next Steps</div>
+            <div class="metric-value">
+                {% if page.has_next_steps %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.has_next_steps %}
+                    Provides continuation guidance
+                {% else %}
+                    Consider adding "Next steps" or "What's next" section
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.sections_count >= 3 %}present{% elif page.sections_count > 0 %}partial{% else %}missing{% endif %}">
+            <div class="metric-label">Content Sections</div>
+            <div class="metric-value">{{ page.sections_count }}</div>
+            <div class="metric-detail">
+                {% if page.sections_count >= 5 %}
+                    Well-structured content
+                {% elif page.sections_count >= 3 %}
+                    Good structure
+                {% else %}
+                    Consider breaking into more sections
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    {% if page.qa_pairs %}
+        <div class="collapsible-section" style="margin-top: 1.5rem;">
+            <div class="collapsible-header" onclick="toggleCollapse(this)">
+                <span>View Q&A Pairs ({{ page.qa_count }})</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content">
+                <ul class="list-items">
+                    {% for qa in page.qa_pairs %}
+                        <li>
+                            <strong>Q:</strong> {{ qa.question }}<br>
+                            <strong>A:</strong> {{ qa.answer|truncatewords:30 }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Content Quality -->
+<div class="metrics-section">
+    <h2>✨ Content Quality & Comprehensiveness</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.content_type_diversity >= 4 %}present{% elif page.content_type_diversity >= 2 %}partial{% else %}missing{% endif %}">
+            <div class="metric-label">Content Type Diversity</div>
+            <div class="metric-value">{{ page.content_type_diversity }}/5</div>
+            <div class="metric-detail">
+                Text{% if page.has_diagrams %}, Diagrams{% endif %}{% if page.has_videos %}, Videos{% endif %}{% if page.has_examples %}, Examples{% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_examples %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Code Examples</div>
+            <div class="metric-value">
+                {% if page.has_examples %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.code_blocks %}
+                    {{ page.code_blocks|length }} code block{{ page.code_blocks|length|pluralize }}
+                {% else %}
+                    No code examples detected
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_troubleshooting %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Troubleshooting</div>
+            <div class="metric-value">
+                {% if page.has_troubleshooting %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.has_troubleshooting %}
+                    Helps users solve problems
+                {% else %}
+                    Consider adding troubleshooting section
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.readability_score %}{% if page.readability_score >= 60 and page.readability_score <= 70 %}present{% elif page.readability_score >= 40 %}partial{% else %}missing{% endif %}{% else %}missing{% endif %}">
+            <div class="metric-label">Readability Score</div>
+            <div class="metric-value">
+                {% if page.readability_score %}
+                    {{ page.readability_score|floatformat:1 }}
+                {% else %}
+                    <span class="placeholder">N/A</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.readability_score %}
+                    {% if page.readability_score >= 60 and page.readability_score <= 70 %}
+                        Optimal readability
+                    {% elif page.readability_score >= 40 %}
+                        Acceptable readability
+                    {% else %}
+                        Consider simplifying language
+                    {% endif %}
+                {% else %}
+                    Flesch Reading Ease score
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.estimated_reading_time > 0 %}present{% else %}partial{% endif %}">
+            <div class="metric-label">Reading Time</div>
+            <div class="metric-value">{{ page.estimated_reading_time }} min</div>
+            <div class="metric-detail">Estimated at 225 words/minute</div>
+        </div>
+        
+        <div class="metric-item {% if page.has_tldr %}present{% else %}missing{% endif %}">
+            <div class="metric-label">TL;DR / Summary</div>
+            <div class="metric-value">
+                {% if page.has_tldr %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.has_tldr %}
+                    Quick summary available
+                {% else %}
+                    Consider adding summary section
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive Features -->
+<div class="metrics-section">
+    <h2>🎮 Interactive Features</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.has_code_playground %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Code Playground</div>
+            <div class="metric-value">
+                {% if page.has_code_playground %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_api_explorer %}present{% else %}missing{% endif %}">
+            <div class="metric-label">API Explorer</div>
+            <div class="metric-value">
+                {% if page.has_api_explorer %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_feedback_mechanism %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Feedback Mechanism</div>
+            <div class="metric-value">
+                {% if page.has_feedback_mechanism %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_version_switcher %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Version Switcher</div>
+            <div class="metric-value">
+                {% if page.has_version_switcher %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_search %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Search Functionality</div>
+            <div class="metric-value">
+                {% if page.has_search %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Accessibility -->
+<div class="metrics-section">
+    <h2>♿ Accessibility & UX</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.alt_text_quality_score >= 0.8 %}present{% elif page.alt_text_quality_score >= 0.5 %}partial{% else %}missing{% endif %}">
+            <div class="metric-label">Alt Text Quality</div>
+            <div class="metric-value">{{ page.alt_text_quality_score|floatformat:0|default:"0" }}%</div>
+            <div class="metric-detail">
+                {% if page.alt_text_quality_score >= 0.8 %}
+                    Excellent image accessibility
+                {% elif page.alt_text_quality_score >= 0.5 %}
+                    Some images need better alt text
+                {% else %}
+                    Many images missing alt text
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.heading_structure_valid %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Heading Structure</div>
+            <div class="metric-value">
+                {% if page.heading_structure_valid %}
+                    <span class="badge-status present">Valid</span>
+                {% else %}
+                    <span class="badge-status missing">Invalid</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.heading_structure_valid %}
+                    Proper h1-h6 hierarchy
+                {% else %}
+                    Heading levels skip (e.g., h1→h3)
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.mobile_viewport_meta %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Mobile Viewport</div>
+            <div class="metric-value">
+                {% if page.mobile_viewport_meta %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.mobile_viewport_meta %}
+                    Mobile-optimized meta tag
+                {% else %}
+                    Add viewport meta tag
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.aria_labels_count > 5 %}present{% elif page.aria_labels_count > 0 %}partial{% else %}missing{% endif %}">
+            <div class="metric-label">ARIA Labels</div>
+            <div class="metric-value">{{ page.aria_labels_count }}</div>
+            <div class="metric-detail">
+                {% if page.aria_labels_count > 5 %}
+                    Good ARIA usage
+                {% elif page.aria_labels_count > 0 %}
+                    Some ARIA labels present
+                {% else %}
+                    Consider adding ARIA labels
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.has_skip_links %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Skip Links</div>
+            <div class="metric-value">
+                {% if page.has_skip_links %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            <div class="metric-detail">
+                {% if page.has_skip_links %}
+                    Navigation skip links found
+                {% else %}
+                    Add "Skip to main content" link
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Version & Compatibility -->
+<div class="metrics-section">
+    <h2>🔧 Version & Compatibility</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.product_versions %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Product Versions</div>
+            <div class="metric-value">{{ page.product_versions|length }}</div>
+            {% if page.product_versions %}
+                <div class="metric-detail">
+                    {% for version in page.product_versions|slice:":3" %}
+                        <span style="background: #3498db; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-right: 0.25rem;">{{ version }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item {% if page.language_versions %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Language Versions</div>
+            <div class="metric-value">{{ page.language_versions|length }}</div>
+            {% if page.language_versions %}
+                <div class="metric-detail">
+                    {% for version in page.language_versions|slice:":2" %}
+                        {{ version }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item {% if page.has_deprecation_warning %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Deprecation Warnings</div>
+            <div class="metric-value">
+                {% if page.has_deprecation_warning %}
+                    <span class="badge-status partial">{{ page.deprecation_warnings|length }}</span>
+                {% else %}
+                    <span class="badge-status present">None</span>
+                {% endif %}
+            </div>
+            {% if page.deprecation_warnings %}
+                <div class="metric-detail">
+                    {% for warning in page.deprecation_warnings %}
+                        {{ warning }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Technical SEO -->
+<div class="metrics-section">
+    <h2>🔍 Technical SEO</h2>
+    <div class="metric-grid">
+        <div class="metric-item {% if page.canonical_url %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Canonical URL</div>
+            <div class="metric-value">
+                {% if page.canonical_url %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.meta_description %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Meta Description</div>
+            <div class="metric-value">
+                {% if page.meta_description %}
+                    <span class="badge-status present">Present</span>
+                {% else %}
+                    <span class="badge-status missing">Missing</span>
+                {% endif %}
+            </div>
+            {% if page.meta_description %}
+                <div class="metric-detail">{{ page.meta_description|truncatewords:15 }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item {% if page.structured_data_types %}present{% else %}missing{% endif %}">
+            <div class="metric-label">Schema Markup</div>
+            <div class="metric-value">{{ page.structured_data_types|length }}</div>
+            {% if page.structured_data_types %}
+                <div class="metric-detail">
+                    {% for schema in page.structured_data_types|slice:":3" %}
+                        {{ schema }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="metric-item {% if page.is_orphan_page %}missing{% else %}present{% endif %}">
+            <div class="metric-label">Internal Links</div>
+            <div class="metric-value">{{ page.incoming_internal_links_count }}</div>
+            <div class="metric-detail">
+                {% if page.is_orphan_page %}
+                    ⚠️ Orphan page (no internal links)
+                {% else %}
+                    Linked from other pages
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance -->
+<div class="metrics-section">
+    <h2>⚡ Performance</h2>
+    <div class="metric-grid">
+        <div class="metric-item present">
+            <div class="metric-label">Page Size</div>
+            <div class="metric-value">{{ page.page_size|filesizeformat }}</div>
+        </div>
+        
+        <div class="metric-item present">
+            <div class="metric-label">Response Time</div>
+            <div class="metric-value">{{ page.response_time|floatformat:2 }}s</div>
+        </div>
+        
+        <div class="metric-item {% if page.script_count < 10 %}present{% elif page.script_count < 20 %}partial{% else %}missing{% endif %}">
+            <div class="metric-label">Scripts</div>
+            <div class="metric-value">{{ page.script_count }}</div>
+            <div class="metric-detail">
+                {% if page.script_count >= 20 %}
+                    High script count may affect performance
+                {% else %}
+                    Reasonable script count
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="metric-item {% if page.third_party_scripts|length < 5 %}present{% elif page.third_party_scripts|length < 10 %}partial{% else %}missing{% endif %}">
+            <div class="metric-label">Third-Party Scripts</div>
+            <div class="metric-value">{{ page.third_party_scripts|length }}</div>
+            {% if page.third_party_scripts %}
+                <div class="metric-detail">
+                    {% for domain in page.third_party_scripts|slice:":2" %}
+                        {{ domain }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleCollapse(header) {
+    const content = header.nextElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+    
+    content.classList.toggle('active');
+    icon.classList.toggle('active');
+}
+
+function showScreenshot() {
+    const screenshotSection = document.getElementById('screenshot-section');
+    if (screenshotSection) {
+        screenshotSection.style.display = 'block';
+        screenshotSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+</script>
+
+{% endblock %}

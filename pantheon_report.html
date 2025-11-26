@@ -1,0 +1,550 @@
+
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Documentation Analysis Report - https://docs.pantheon.io/</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background: #f5f5f5;
+                }
+                
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 40px;
+                    border-radius: 10px;
+                    margin-bottom: 30px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                }
+                
+                .header h1 {
+                    margin: 0;
+                    font-size: 2.5em;
+                    font-weight: 700;
+                }
+                
+                .header .subtitle {
+                    margin-top: 10px;
+                    opacity: 0.95;
+                    font-size: 1.2em;
+                }
+                
+                .section {
+                    background: white;
+                    padding: 30px;
+                    margin-bottom: 30px;
+                    border-radius: 10px;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                }
+                
+                .section h2 {
+                    color: #667eea;
+                    border-bottom: 2px solid #f0f0f0;
+                    padding-bottom: 10px;
+                    margin-bottom: 20px;
+                }
+                
+                .metric-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 20px;
+                    margin: 20px 0;
+                }
+                
+                .metric-card {
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 8px;
+                    border-left: 4px solid #667eea;
+                }
+                
+                .metric-card .value {
+                    font-size: 2em;
+                    font-weight: bold;
+                    color: #333;
+                }
+                
+                .metric-card .label {
+                    color: #666;
+                    margin-top: 5px;
+                    font-size: 0.9em;
+                }
+                
+                .score-display {
+                    text-align: center;
+                    padding: 30px;
+                }
+                
+                .score-circle {
+                    display: inline-block;
+                    width: 150px;
+                    height: 150px;
+                    border-radius: 50%;
+                    line-height: 150px;
+                    font-size: 3em;
+                    font-weight: bold;
+                    color: white;
+                    margin: 20px;
+                }
+                
+                .score-high { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+                .score-medium { background: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%); }
+                .score-low { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); }
+                
+                .insight {
+                    padding: 15px;
+                    margin: 15px 0;
+                    border-radius: 8px;
+                    border-left: 5px solid;
+                }
+                
+                .insight.critical {
+                    background: #fef2f2;
+                    border-color: #dc2626;
+                }
+                
+                .insight.warning {
+                    background: #fffbeb;
+                    border-color: #f59e0b;
+                }
+                
+                .insight.success {
+                    background: #f0fdf4;
+                    border-color: #10b981;
+                }
+                
+                .insight h3 {
+                    margin-top: 0;
+                    color: #333;
+                }
+                
+                .recommendation {
+                    padding: 15px;
+                    background: #f0f9ff;
+                    border-radius: 8px;
+                    margin: 15px 0;
+                }
+                
+                .roadmap-timeline {
+                    display: flex;
+                    justify-content: space-between;
+                    margin: 30px 0;
+                }
+                
+                .roadmap-phase {
+                    flex: 1;
+                    margin: 0 10px;
+                    padding: 20px;
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    border-top: 4px solid #667eea;
+                }
+                
+                .roadmap-phase h4 {
+                    color: #667eea;
+                    margin-top: 0;
+                }
+                
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                }
+                
+                th {
+                    background: #667eea;
+                    color: white;
+                    padding: 12px;
+                    text-align: left;
+                }
+                
+                td {
+                    padding: 10px;
+                    border-bottom: 1px solid #f0f0f0;
+                }
+                
+                tr:hover {
+                    background: #f8f9fa;
+                }
+                
+                .footer {
+                    text-align: center;
+                    padding: 20px;
+                    margin-top: 50px;
+                    color: #666;
+                    font-size: 0.9em;
+                }
+                
+                @media print {
+                    body { background: white; }
+                    .section { box-shadow: none; border: 1px solid #ddd; }
+                    .header { page-break-after: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Documentation Analysis Report</h1>
+                <div class="subtitle">
+                    https://docs.pantheon.io/<br>
+                    Generated: November 17, 2025
+                </div>
+            </div>
+            
+            <!-- Executive Summary -->
+            <div class="section">
+                <h2>Executive Summary</h2>
+                <div class="score-display">
+                    
+                </div>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="value">208</div>
+                        <div class="label">Total Pages</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="value">3</div>
+                        <div class="label">Critical Issues</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="value">4</div>
+                        <div class="label">Quick Wins</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="value">$171700</div>
+                        <div class="label">Potential Value</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Insights -->
+            
+            <div class="section">
+                <h2>Key Insights</h2>
+                
+                <div class="insight critical">
+                    <h3>Missing API Authentication Documentation</h3>
+                    <p><strong>Finding:</strong> No authentication documentation found</p>
+                    <p><strong>Impact:</strong> Developers can&#x27;t integrate without auth docs</p>
+                    <p><strong>Effort:</strong> medium</p>
+                    
+                    <p><strong>Estimated Value:</strong> $25000</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight critical">
+                    <h3>Poor Content Readability Impacting User Experience</h3>
+                    <p><strong>Finding:</strong> 66 pages have readability scores below 50</p>
+                    <p><strong>Impact:</strong> Estimated $79,200 annual support cost</p>
+                    <p><strong>Effort:</strong> medium</p>
+                    
+                    <p><strong>Estimated Value:</strong> $79200</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight opportunity">
+                    <h3>Increase Developer Adoption with Examples</h3>
+                    <p><strong>Finding:</strong> 75 technical pages lack examples</p>
+                    <p><strong>Impact:</strong> 60% faster integration time for developers</p>
+                    <p><strong>Effort:</strong> medium</p>
+                    
+                    <p><strong>Estimated Value:</strong> $37500</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight critical">
+                    <h3>Undiscoverable Content (Orphaned Pages)</h3>
+                    <p><strong>Finding:</strong> 207 pages have no incoming links</p>
+                    <p><strong>Impact:</strong> Content investment wasted - users can&#x27;t find these pages</p>
+                    <p><strong>Effort:</strong> low</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight warning">
+                    <h3>Incomplete Documentation Pages</h3>
+                    <p><strong>Finding:</strong> 93 pages have less than 100 words</p>
+                    <p><strong>Impact:</strong> Poor user experience and increased bounce rate</p>
+                    <p><strong>Effort:</strong> low</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight quick_win">
+                    <h3>Fix Duplicate Page Titles</h3>
+                    <p><strong>Finding:</strong> 16 sets of duplicate titles found</p>
+                    <p><strong>Impact:</strong> Improved search rankings and click-through rates</p>
+                    <p><strong>Effort:</strong> low</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight warning">
+                    <h3>No Error Handling Documentation</h3>
+                    <p><strong>Finding:</strong> API error responses and handling not documented</p>
+                    <p><strong>Impact:</strong> Poor developer experience, increased support tickets</p>
+                    <p><strong>Effort:</strong> low</p>
+                    
+                    
+                    
+                </div>
+                
+                <div class="insight opportunity">
+                    <h3>Expand Developer Reach with More Languages</h3>
+                    <p><strong>Finding:</strong> No examples in: ruby, php, go, python, java, javascript</p>
+                    <p><strong>Impact:</strong> Missing 40% of potential developer audience</p>
+                    <p><strong>Effort:</strong> high</p>
+                    
+                    <p><strong>Estimated Value:</strong> $30000</p>
+                    
+                    
+                    
+                </div>
+                
+            </div>
+            
+            
+            <!-- Detailed Metrics -->
+            
+            <div class="section">
+                <h2>Detailed Analysis</h2>
+                
+                
+                <h3>Content Quality</h3>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Industry Benchmark</th>
+                    </tr>
+                    <tr>
+                        <td>Average Readability Score</td>
+                        <td>N/A</td>
+                        <td>60-70</td>
+                    </tr>
+                    <tr>
+                        <td>Low Readability Pages</td>
+                        <td>66</td>
+                        <td>&lt; 10%</td>
+                    </tr>
+                    <tr>
+                        <td>Stub Pages (&lt;100 words)</td>
+                        <td>93</td>
+                        <td>&lt; 5%</td>
+                    </tr>
+                    <tr>
+                        <td>Pages Without Examples</td>
+                        <td>75</td>
+                        <td>&lt; 20%</td>
+                    </tr>
+                </table>
+                
+                
+                
+                <h3>Code Coverage</h3>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Total Code Blocks</td>
+                        <td>0</td>
+                    </tr>
+                    <tr>
+                        <td>Pages with Code Examples</td>
+                        <td>208</td>
+                    </tr>
+                    <tr>
+                        <td>API Pages Without Examples</td>
+                        <td>0</td>
+                    </tr>
+                </table>
+                
+                
+                
+                
+                
+                <h3>SEO Opportunities</h3>
+                <table>
+                    <tr>
+                        <th>Issue</th>
+                        <th>Count</th>
+                        <th>Priority</th>
+                    </tr>
+                    <tr>
+                        <td>Missing Page Titles</td>
+                        <td>0</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td>Missing Meta Descriptions</td>
+                        <td>1</td>
+                        <td>High</td>
+                    </tr>
+                    <tr>
+                        <td>Duplicate Content Pages</td>
+                        <td>0</td>
+                        <td>Medium</td>
+                    </tr>
+                </table>
+                
+                <p><strong>Estimated Annual Revenue Impact:</strong> $120000</p>
+                
+                
+            </div>
+            
+            
+            <!-- Recommendations -->
+            
+            <div class="section">
+                <h2>Recommendations</h2>
+                
+                <div class="recommendation">
+                    <h3>Undiscoverable Content (Orphaned Pages)</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> immediate | 
+                        <strong>Effort:</strong> 1-2 days | 
+                        <strong>Impact:</strong> Content investment wasted - users can&#x27;t find these pages
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>Incomplete Documentation Pages</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> immediate | 
+                        <strong>Effort:</strong> 1-2 days | 
+                        <strong>Impact:</strong> Poor user experience and increased bounce rate
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>Fix Duplicate Page Titles</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> immediate | 
+                        <strong>Effort:</strong> 1-2 days | 
+                        <strong>Impact:</strong> Improved search rankings and click-through rates
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>No Error Handling Documentation</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> immediate | 
+                        <strong>Effort:</strong> 1-2 days | 
+                        <strong>Impact:</strong> Poor developer experience, increased support tickets
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>Missing API Authentication Documentation</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> short-term | 
+                        <strong>Effort:</strong> 1-2 weeks | 
+                        <strong>Impact:</strong> Developers can&#x27;t integrate without auth docs
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>Poor Content Readability Impacting User Experience</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> short-term | 
+                        <strong>Effort:</strong> 1-2 weeks | 
+                        <strong>Impact:</strong> Estimated $79,200 annual support cost
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>Increase Developer Adoption with Examples</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> short-term | 
+                        <strong>Effort:</strong> 1-2 weeks | 
+                        <strong>Impact:</strong> 60% faster integration time for developers
+                    </p>
+                </div>
+                
+                <div class="recommendation">
+                    <h3>Expand Developer Reach with More Languages</h3>
+                    <p></p>
+                    <p>
+                        <strong>Priority:</strong> long-term | 
+                        <strong>Effort:</strong> 1-3 months | 
+                        <strong>Impact:</strong> Missing 40% of potential developer audience
+                    </p>
+                </div>
+                
+            </div>
+            
+            
+            <!-- 30-60-90 Day Roadmap -->
+            
+            <div class="section">
+                <h2>Implementation Roadmap</h2>
+                <div class="roadmap-timeline">
+                    
+                    <div class="roadmap-phase">
+                        <h4>30 Days</h4>
+                        <ul>
+                        
+                            <li>Undiscoverable Content (Orphaned Pages)</li>
+                        
+                            <li>Incomplete Documentation Pages</li>
+                        
+                            <li>Fix Duplicate Page Titles</li>
+                        
+                            <li>No Error Handling Documentation</li>
+                        
+                        </ul>
+                    </div>
+                    
+                    
+                    
+                    <div class="roadmap-phase">
+                        <h4>60 Days</h4>
+                        <ul>
+                        
+                            <li>Fix Duplicate Page Titles</li>
+                        
+                            <li>No Error Handling Documentation</li>
+                        
+                        </ul>
+                    </div>
+                    
+                    
+                    
+                </div>
+            </div>
+            
+            
+            <div class="footer">
+                <p>Generated by DocAnalyzer - Professional Documentation Analysis</p>
+                <p>© 2025 - Confidential Report</p>
+            </div>
+        </body>
+        </html>
+        

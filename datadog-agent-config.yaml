@@ -1,0 +1,40 @@
+## Datadog Agent Configuration for DocsScraper
+## 
+## Copy this to your Datadog Agent's conf.d directory
+## Location: /opt/datadog-agent/etc/conf.d/docsscraper.d/conf.yaml (Linux)
+##           /opt/datadog-agent/etc/conf.d/docsscraper.d/conf.yaml (macOS Homebrew)
+##           C:\ProgramData\Datadog\conf.d\docsscraper.d\conf.yaml (Windows)
+
+logs:
+  - type: file
+    path: "/Users/steve.bresnick/Projects/docsscraper/logs/my-log.json"
+    service: docsscraper
+    source: python
+    sourcecategory: sourcecode
+    tags:
+      - env:dev
+      - project:docsscraper
+    
+  - type: file
+    path: "/Users/steve.bresnick/Projects/docsscraper/logs/crawler.log"
+    service: docsscraper-crawler
+    source: python
+    sourcecategory: sourcecode
+    tags:
+      - env:dev
+      - project:docsscraper
+      - component:crawler
+    
+  - type: file
+    path: "/Users/steve.bresnick/Projects/docsscraper/logs/docanalyzer.log"
+    service: docsscraper
+    source: python
+    sourcecategory: sourcecode
+    tags:
+      - env:dev
+      - project:docsscraper
+      - component:analyzer
+
+
+
+

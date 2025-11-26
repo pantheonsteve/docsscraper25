@@ -1,0 +1,262 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Management Commands Reference - DocAnalyzer{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Management Commands Reference</h1>
+    <p class="text-muted">
+        Cheatsheet for all available <code>manage.py</code> commands used to operate the DocAnalyzer
+        crawler and analytics.
+    </p>
+</div>
+
+<style>
+    .cmd-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+    .cmd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    .cmd-name {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .cmd-badge {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #eef2ff;
+        color: #4338ca;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .cmd-description {
+        margin-bottom: 0.75rem;
+        color: #4b5563;
+    }
+    pre.code-block {
+        background: #0f172a;
+        color: #e5e7eb;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        margin-bottom: 0.75rem;
+    }
+    .cmd-meta {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+    .cmd-args {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+    .cmd-args dt {
+        font-weight: 600;
+    }
+    .cmd-args dd {
+        margin: 0 0 0.5rem 0;
+        color: #4b5563;
+    }
+    .tag-group {
+        margin-top: 0.25rem;
+    }
+    .tag {
+        display: inline-block;
+        padding: 0.1rem 0.5rem;
+        margin-right: 0.3rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        background: #f3f4f6;
+        color: #4b5563;
+    }
+</style>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py crawl</span>
+        <span class="cmd-badge">Crawling</span>
+    </div>
+    <p class="cmd-description">
+        Start a new documentation crawl for a given URL and client. This is the CLI equivalent of the
+        “Start New Crawl” form in the dashboard.
+    </p>
+    <pre class="code-block">
+# Basic: crawl a site for the default client
+python manage.py crawl --url https://docs.dynatrace.com/docs
+
+# With explicit client and depth limit
+python manage.py crawl \
+    --url https://docs.datadoghq.com \
+    --client "Acme Corp" \
+    --depth 5
+
+# Limit pages and enable raw HTML + screenshots (requires Playwright)
+python manage.py crawl \
+    --url https://docs.pantheon.io \
+    --client "My Customer" \
+    --depth 4 \
+    --max-pages 200 \
+    --capture-html \
+    --screenshots \
+    --async</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--url</code>: Starting URL to crawl (required).</dd>
+        <dd><code>--client</code>: Client name or ID; created automatically if it doesn’t exist.</dd>
+        <dd><code>--depth</code>: Maximum crawl depth (default 5).</dd>
+        <dd><code>--domains</code>: Comma-separated list of allowed domains.</dd>
+        <dd><code>--max-pages</code>: Hard limit on number of pages (useful for test runs).</dd>
+        <dd><code>--capture-html</code>: Store full raw HTML for each page.</dd>
+        <dd><code>--screenshots</code>: Capture full-page screenshots via Playwright (async Celery tasks).</dd>
+        <dd><code>--async</code>: Run crawl via Celery instead of blocking the terminal.</dd>
+    </dl>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py crawl_status</span>
+        <span class="cmd-badge">Monitoring</span>
+    </div>
+    <p class="cmd-description">
+        Inspect the status, timings, and statistics for a given crawl job.
+    </p>
+    <pre class="code-block">
+# Human-readable summary
+python manage.py crawl_status --job 57
+
+# JSON output for scripts / integrations
+python manage.py crawl_status --job 57 --json</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--job</code>: ID of the <code>CrawlJob</code> to inspect.</dd>
+        <dd><code>--json</code>: Output a machine-readable JSON document.</dd>
+    </dl>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py cancel_crawl</span>
+        <span class="cmd-badge">Operations</span>
+    </div>
+    <p class="cmd-description">
+        Cancel a running or pending crawl and revoke its Celery task.
+    </p>
+    <pre class="code-block">
+# Cancel a running job
+python manage.py cancel_crawl --job 57
+
+# Force cancel even if the job is already completed/failed
+python manage.py cancel_crawl --job 57 --force</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--job</code>: ID of the job to cancel.</dd>
+        <dd><code>--force</code>: Override status checks and mark the job cancelled anyway.</dd>
+    </dl>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py export_crawl</span>
+        <span class="cmd-badge">Exports</span>
+    </div>
+    <p class="cmd-description">
+        Export all pages from a crawl as JSON or CSV for offline analysis, reporting, or ingestion
+        into other systems.
+    </p>
+    <pre class="code-block">
+# Export to JSON (stdout)
+python manage.py export_crawl --job 57 --format json
+
+# Export to JSON file including raw HTML
+python manage.py export_crawl \
+    --job 57 \
+    --format json \
+    --include-html \
+    --output exports/dynatrace-job57.json
+
+# Export a lightweight CSV summary
+python manage.py export_crawl \
+    --job 57 \
+    --format csv \
+    --output exports/dynatrace-job57.csv</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--job</code>: ID of the job to export.</dd>
+        <dd><code>--format</code>: <code>json</code> or <code>csv</code> (default <code>json</code>).</dd>
+        <dd><code>--output</code>: Path to save the export (otherwise prints to stdout).</dd>
+        <dd><code>--include-html</code>: Include full <code>raw_html</code> in the JSON/CSV.</dd>
+    </dl>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py deduplicate_pages</span>
+        <span class="cmd-badge">Cleanup</span>
+    </div>
+    <p class="cmd-description">
+        Remove duplicate pages for a client, keeping the most recent copy of each URL. Useful
+        after many experimental crawls.
+    </p>
+    <pre class="code-block">
+# Dry-run: see what would be deleted without changing data
+python manage.py deduplicate_pages --client-slug dynatrace --dry-run
+
+# Actually deduplicate pages for a single client
+python manage.py deduplicate_pages --client-slug dynatrace
+
+# Deduplicate pages for all active clients
+python manage.py deduplicate_pages --all-clients</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--client-slug</code>: Slug of the client whose pages you want to dedupe.</dd>
+        <dd><code>--all-clients</code>: Run deduplication across all active clients.</dd>
+        <dd><code>--dry-run</code>: Show what would be deleted without actually deleting.</dd>
+    </dl>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py reanalyze_pages</span>
+        <span class="cmd-badge">Backfill / Analysis</span>
+    </div>
+    <p class="cmd-description">
+        Re-run structural analysis (code blocks, learning objectives, content-type metrics)
+        on already-crawled pages using the latest parser logic.
+    </p>
+    <pre class="code-block">
+# Re-analyze all pages for a specific job
+python manage.py reanalyze_pages --job-id 57
+
+# Re-analyze a single page by ID
+python manage.py reanalyze_pages --page-id 21115
+
+# Re-analyze all pages for a client (by ID)
+python manage.py reanalyze_pages --client-id 3
+
+# Limit to the first 100 pages (for quick tests)
+python manage.py reanalyze_pages --job-id 57 --limit 100</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--page-id</code>: Re-analyze one specific <code>CrawledPage</code> by ID.</dd>
+        <dd><code>--job-id</code>: Re-analyze all pages from a specific <code>CrawlJob</code>.</dd>
+        <dd><code>--client-id</code>: Re-analyze all pages for a given client.</dd>
+        <dd><code>--limit</code>: Cap the number of pages processed (useful for experiments).</dd>
+    </dl>
+</div>
+
+{% endblock %}
+
+
