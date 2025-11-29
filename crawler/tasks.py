@@ -342,3 +342,188 @@ def capture_page_screenshot_task(page_id):
         error_msg = f"Error capturing screenshot for page {page_id}: {str(e)}"
         logger.exception(error_msg)
         return {'success': False, 'error': error_msg}
+
+
+@shared_task(bind=True, time_limit=300, max_retries=3, default_retry_delay=60)
+def generate_page_embeddings_task(self, page_id, force=False):
+    """
+    Generate OpenAI embeddings for a single crawled page.
+
+    Uses the OpenAI text-embedding-3-small model to compute:
+    - A full-page embedding (stored in `page.page_embedding`)
+    - One embedding per section (stored in `page.section_embeddings`)
+    
+    Retries up to 3 times on transient failures (rate limits, network errors).
+    """
+    from decouple import config
+    from crawler.models import CrawledPage
+    from openai import OpenAI, RateLimitError, APIError, APIConnectionError
+
+    api_key = config("OPENAI_API_KEY", default=None) or config("OPENAI_KEY", default=None)
+    if not api_key:
+        logger.error(f"[Embeddings] Page {page_id}: OPENAI_API_KEY not set")
+        return {"success": False, "error": "OPENAI_API_KEY not configured"}
+
+    try:
+        page = CrawledPage.objects.get(id=page_id)
+    except CrawledPage.DoesNotExist:
+        logger.error(f"[Embeddings] Page {page_id} not found in database")
+        return {"success": False, "error": f"Page {page_id} not found"}
+
+    if not page.main_content:
+        logger.info(f"[Embeddings] Page {page_id} ({page.url}): No main_content; skipping")
+        return {"success": False, "error": "Page has no main_content"}
+
+    if not force and page.page_embedding:
+        logger.info(f"[Embeddings] Page {page_id} ({page.url}): Already has embeddings; skipping")
+        return {"success": True, "skipped": True}
+
+    client = OpenAI(api_key=api_key)
+    EMBEDDING_MODEL = "text-embedding-3-small"
+
+    # Build input texts: first the full page, then each section
+    inputs = []
+    index_map = []
+
+    full_text = (page.main_content or "").strip()
+    if full_text:
+        inputs.append(full_text)
+        index_map.append(("page", None))
+
+    sections = page.sections or []
+    for idx, section in enumerate(sections):
+        content = (section.get("content") or "").strip()
+        if not content:
+            continue
+        heading = (section.get("heading") or "").strip()
+        text = f"{heading}\n\n{content}" if heading else content
+        inputs.append(text)
+        index_map.append(("section", idx))
+
+    if not inputs:
+        logger.warning(f"[Embeddings] Page {page_id} ({page.url}): No text content to embed")
+        return {"success": False, "error": "No text content to embed"}
+
+    logger.info(
+        f"[Embeddings] Page {page_id} ({page.url}): Generating {len(inputs)} embeddings using {EMBEDDING_MODEL}"
+    )
+
+    try:
+        # Call OpenAI API with error handling
+        resp = client.embeddings.create(model=EMBEDDING_MODEL, input=inputs)
+        vectors = [d.embedding for d in resp.data]
+        
+    except RateLimitError as e:
+        logger.warning(
+            f"[Embeddings] Page {page_id}: Rate limit hit, retrying in 60s (attempt {self.request.retries + 1}/3)"
+        )
+        # Retry with exponential backoff
+        raise self.retry(exc=e, countdown=60 * (2 ** self.request.retries))
+        
+    except (APIConnectionError, APIError) as e:
+        logger.warning(
+            f"[Embeddings] Page {page_id}: API error ({type(e).__name__}), retrying (attempt {self.request.retries + 1}/3)"
+        )
+        # Retry transient API errors
+        raise self.retry(exc=e, countdown=30 * (2 ** self.request.retries))
+        
+    except Exception as e:
+        # Non-retryable error (e.g., invalid input)
+        logger.error(
+            f"[Embeddings] Page {page_id} ({page.url}): Failed with {type(e).__name__}: {str(e)}"
+        )
+        return {"success": False, "error": f"{type(e).__name__}: {str(e)}"}
+
+    # Process embeddings
+    page_embedding = []
+    section_embeddings = []
+
+    for (kind, idx), vec in zip(index_map, vectors):
+        if kind == "page":
+            page_embedding = vec
+        else:
+            section = (page.sections or [])[idx]
+            section_embeddings.append(
+                {
+                    "index": idx,
+                    "heading": section.get("heading"),
+                    "level": section.get("level"),
+                    "word_count": section.get("word_count"),
+                    "has_code": section.get("has_code"),
+                    "has_list": section.get("has_list"),
+                    "content": section.get("content"),
+                    "embedding_model": EMBEDDING_MODEL,
+                    "embedding": vec,
+                }
+            )
+
+    # Generate learning objective embeddings if page has AI-extracted LOs
+    learning_objective_embeddings = []
+    if page.ai_learning_objectives:
+        lo_inputs = []
+        for lo in page.ai_learning_objectives:
+            objective = lo.get("objective", "")
+            bloom_level = lo.get("bloom_level", "")
+            bloom_verb = lo.get("bloom_verb", "")
+            difficulty = lo.get("difficulty", "")
+            
+            # Create rich text for embedding
+            parts = [f"Context: {page.title}"]
+            parts.append(f"Objective: {objective}")
+            if bloom_verb:
+                parts.append(f"Action: {bloom_verb}")
+            if bloom_level:
+                parts.append(f"Level: {bloom_level}")
+            if difficulty:
+                parts.append(f"Difficulty: {difficulty}")
+            
+            lo_inputs.append(" | ".join(parts))
+        
+        if lo_inputs:
+            try:
+                logger.info(f"[Embeddings] Page {page_id}: Generating {len(lo_inputs)} learning objective embeddings")
+                lo_resp = client.embeddings.create(model=EMBEDDING_MODEL, input=lo_inputs)
+                lo_vectors = [d.embedding for d in lo_resp.data]
+                
+                for lo, vec in zip(page.ai_learning_objectives, lo_vectors):
+                    learning_objective_embeddings.append({
+                        "objective": lo.get("objective", ""),
+                        "bloom_level": lo.get("bloom_level", ""),
+                        "bloom_verb": lo.get("bloom_verb", ""),
+                        "difficulty": lo.get("difficulty", ""),
+                        "estimated_time_minutes": lo.get("estimated_time_minutes"),
+                        "measurable": lo.get("measurable"),
+                        "embedding_model": EMBEDDING_MODEL,
+                        "embedding": vec,
+                    })
+            except Exception as e:
+                logger.warning(f"[Embeddings] Page {page_id}: Failed to generate LO embeddings: {e}")
+                # Continue without LO embeddings - not critical
+    
+    # Save to database
+    try:
+        page.page_embedding = page_embedding
+        page.section_embeddings = section_embeddings
+        page.learning_objective_embeddings = learning_objective_embeddings
+        page.save(update_fields=[
+            "page_embedding", 
+            "section_embeddings",
+            "learning_objective_embeddings"
+        ])
+        
+        logger.info(
+            f"[Embeddings] Page {page_id} ({page.url}): ✓ Saved {len(section_embeddings)} section + "
+            f"{len(learning_objective_embeddings)} LO embeddings (+ full-page)"
+        )
+        return {
+            "success": True, 
+            "sections": len(section_embeddings),
+            "learning_objectives": len(learning_objective_embeddings),
+            "page_id": page_id
+        }
+        
+    except Exception as e:
+        logger.error(
+            f"[Embeddings] Page {page_id}: Failed to save to database: {str(e)}"
+        )
+        return {"success": False, "error": f"Database error: {str(e)}"}

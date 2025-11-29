@@ -257,6 +257,146 @@ python manage.py reanalyze_pages --job-id 57 --limit 100</pre>
     </dl>
 </div>
 
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py analyze_content</span>
+        <span class="cmd-badge">AI / Content Analysis</span>
+    </div>
+    <p class="cmd-description">
+        Analyze crawled pages with AI to extract comprehensive metadata for lesson grouping and taxonomy building. 
+        Uses a hybrid approach with spaCy (local NLP) + GPT-4o-mini to extract: hierarchical topics, 
+        learning objectives with Bloom's taxonomy, prerequisite chains, page summaries, audience levels, 
+        key concepts, quality indicators, and auto-generates embeddings for learning objectives. 
+        Cost: ~$0.00015/page for analysis + ~$0.00003/page for LO embeddings.
+    </p>
+    <pre class="code-block">
+# Analyze all pages in a job
+python manage.py analyze_content --job-id 57
+
+# Test with first 10 pages (recommended before full analysis)
+python manage.py analyze_content --job-id 57 --limit 10
+
+# Analyze a single page
+python manage.py analyze_content --page-id 21115
+
+# Analyze all pages for a client
+python manage.py analyze_content --client-id 3
+
+# Force re-analysis (overwrite existing AI analysis)
+python manage.py analyze_content --job-id 57 --force
+
+# Dry run to estimate costs without processing
+python manage.py analyze_content --job-id 57 --dry-run</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--job-id</code>: Analyze all pages in a specific crawl job.</dd>
+        <dd><code>--page-id</code>: Analyze a single page by ID.</dd>
+        <dd><code>--client-id</code>: Analyze all pages belonging to a client.</dd>
+        <dd><code>--limit</code>: Process only the first N pages (useful for testing).</dd>
+        <dd><code>--force</code>: Re-analyze pages that already have AI analysis.</dd>
+        <dd><code>--dry-run</code>: Show what would be analyzed and estimate costs.</dd>
+    </dl>
+    <div class="tag-group">
+        <span class="tag">GPT-4o-mini</span>
+        <span class="tag">spaCy NLP</span>
+        <span class="tag">Hierarchical Topics</span>
+        <span class="tag">Bloom Taxonomy</span>
+        <span class="tag">Learning Objectives</span>
+        <span class="tag">LO Embeddings</span>
+        <span class="tag">Prerequisites</span>
+        <span class="tag">Key Concepts</span>
+        <span class="tag">Quality Indicators</span>
+        <span class="tag">Diátaxis Framework</span>
+        <span class="tag">~$0.00018/page</span>
+    </div>
+    <p class="cmd-meta">
+        <strong>What's extracted:</strong>
+    </p>
+    <ul class="cmd-meta" style="margin-left: 1.5rem; margin-top: 0.5rem; color: #4b5563; font-size: 0.9rem;">
+        <li><strong>Topics</strong>: 3-7 hierarchical topics with parent-child relationships, relevance scores, and categories</li>
+        <li><strong>Learning Objectives</strong>: Action-oriented objectives with Bloom's taxonomy levels (remember→create), difficulty, time estimates, measurability</li>
+        <li><strong>Learning Objective Embeddings</strong>: Vector embeddings for each LO to enable semantic clustering and lesson grouping</li>
+        <li><strong>Prerequisites</strong>: Dependency chain with type (knowledge/skill/tool), importance (essential/recommended), descriptions</li>
+        <li><strong>Key Concepts</strong>: Technical terms with definitions, marked as new (introduced here) or assumed (prerequisite knowledge)</li>
+        <li><strong>Page Summary</strong>: 1-2 sentence summary for efficient clustering</li>
+        <li><strong>Audience Level</strong>: Beginner, intermediate, or advanced classification</li>
+        <li><strong>Doc Type</strong>: Re-classified using Diátaxis framework (tutorial, how-to, reference, concept, etc.)</li>
+        <li><strong>Quality Indicators</strong>: Completeness score, improvement suggestions, missing elements (code examples, visuals, troubleshooting)</li>
+        <li><strong>Related Topics</strong>: Cross-linking topics for building documentation graphs</li>
+    </ul>
+    <p class="cmd-meta" style="margin-top: 1rem;">
+        <strong>Requirements:</strong> OPENAI_API_KEY in .env. First run downloads spaCy model (en_core_web_sm) automatically.
+    </p>
+    <p class="cmd-meta">
+        <strong>Cost optimization:</strong> Automatically skips pages with doc_type: navigation, landing, changelog (these are typically non-content pages). 
+        Pages with doc_type 'unknown' ARE analyzed because the AI reclassifies them using the Diátaxis framework.
+        Use <code>--limit 10</code> to test on a small sample before running full analysis.
+    </p>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py generate_embeddings</span>
+        <span class="cmd-badge">AI / Embeddings</span>
+    </div>
+    <p class="cmd-description">
+        Generate OpenAI embeddings (text-embedding-3-small) for crawled pages. Creates vector
+        representations for full pages and individual sections, enabling semantic search and
+        RAG applications.
+    </p>
+    <pre class="code-block">
+# Generate embeddings for all pages in a job
+python manage.py generate_embeddings --job-id 57
+
+# Generate embeddings for a single page
+python manage.py generate_embeddings --page-id 21115
+
+# Generate embeddings for all pages of a client
+python manage.py generate_embeddings --client-id 3
+
+# Force re-generation (overwrite existing embeddings)
+python manage.py generate_embeddings --job-id 57 --force
+
+# Limit to first N pages (for testing costs)
+python manage.py generate_embeddings --job-id 57 --limit 100</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--job-id</code>: Generate embeddings for all pages in a specific crawl job.</dd>
+        <dd><code>--page-id</code>: Generate embeddings for a single page by ID.</dd>
+        <dd><code>--client-id</code>: Generate embeddings for all pages belonging to a client.</dd>
+        <dd><code>--limit</code>: Maximum number of pages to process (useful for cost control).</dd>
+        <dd><code>--force</code>: Recompute embeddings even if they already exist.</dd>
+    </dl>
+    <div class="cmd-meta">
+        <strong>Cost:</strong> ~$0.00005 per page (~1 cent per 200 pages) using text-embedding-3-small.<br>
+        <strong>Requirements:</strong> <code>OPENAI_API_KEY</code> must be set in <code>.env</code>.<br>
+        <strong>Output:</strong> Creates <code>page_embedding</code> (full page vector) and <code>section_embeddings</code> (per-section vectors).
+    </div>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py start_celery</span>
+        <span class="cmd-badge">Infrastructure</span>
+    </div>
+    <p class="cmd-description">
+        Convenience command to start the Celery worker (and optionally Celery beat) for local
+        development using the correct queues and project settings.
+    </p>
+    <pre class="code-block">
+# Start Celery worker (required for crawls, screenshots, embeddings)
+python manage.py start_celery
+
+# Start Celery worker + beat (for scheduled tasks)
+python manage.py start_celery --beat</pre>
+    <dl class="cmd-args">
+        <dt>What it does</dt>
+        <dd>Starts <code>celery -A config worker -l info -Q celery,crawling,analysis</code> using the same Python/venv as <code>manage.py</code>.</dd>
+        <dd>With <code>--beat</code>, also starts <code>celery -A config beat -l info</code> in the same terminal.</dd>
+        <dd>Keeps both processes running until you stop the command with <code>Ctrl+C</code>.</dd>
+    </dl>
+</div>
+
 {% endblock %}
 
 

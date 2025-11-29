@@ -88,12 +88,17 @@ python manage.py runserver
 
 9. **Start Celery worker (in a separate terminal)**
 ```bash
-source venv/bin/activate
-celery -A config worker -l info -Q crawling,analysis
+cd /Users/steve.bresnick/Projects/docsscraper
+source .venv/bin/activate
+
+# Recommended: listen on all queues (required for screenshots)
+celery -A config worker -l info -Q celery,crawling,analysis
 ```
 
 10. **Optional: Start Celery beat for scheduled tasks**
 ```bash
+cd /Users/steve.bresnick/Projects/docsscraper
+source .venv/bin/activate
 celery -A config beat -l info
 ```
 
@@ -128,6 +133,27 @@ python manage.py crawl_status --job=1
 
 # JSON output
 python manage.py crawl_status --job=1 --json
+```
+
+### Celery Worker Cheatsheet
+
+From the project root:
+
+```bash
+# Start worker (all queues: default, crawling, analysis)
+celery -A config worker -l info -Q celery,crawling,analysis
+
+# See active queues
+celery -A config inspect active_queues
+
+# See active tasks
+celery -A config inspect active
+
+# See queued tasks
+celery -A config inspect reserved
+
+# Stop all workers (development only)
+pkill -f "celery -A config worker"
 ```
 
 ### Exporting Crawl Data
@@ -193,6 +219,7 @@ Key environment variables (see `.env.example` for full list):
 - `CRAWLER_POLITENESS_DELAY`: Delay between requests (seconds)
 - `CRAWLER_CONCURRENT_REQUESTS`: Max concurrent requests
 - `CRAWLER_DEFAULT_DEPTH_LIMIT`: Default crawl depth
+- `OPENAI_API_KEY`: API key for generating embeddings with text-embedding-3-small
 
 ### Crawler Settings
 

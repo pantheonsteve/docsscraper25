@@ -184,6 +184,16 @@ class DjangoStoragePipeline:
             except Exception as e:
                 logger.error(f"Error enqueueing screenshot task for page {page.id}: {e}", exc_info=True)
 
+            # Schedule embeddings generation if configured
+            try:
+                if self.job.config.get('generate_embeddings'):
+                    from crawler.tasks import generate_page_embeddings_task
+
+                    generate_page_embeddings_task.delay(page.id)
+                    logger.info(f"Enqueued embeddings task for page {page.id} ({page.url})")
+            except Exception as e:
+                logger.error(f"Error enqueueing embeddings task for page {page.id}: {e}", exc_info=True)
+
         except Exception as e:
             logger.error(f"Error saving page {item['url']}: {str(e)}", exc_info=True)
 

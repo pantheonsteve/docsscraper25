@@ -10,7 +10,8 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from core.models import Client, CrawlJob
 from crawler.models import CrawledPage, CrawlError
-from crawler.tasks import start_crawl_task
+from crawler.tasks import start_crawl_task, generate_page_embeddings_task
+from crawler.content_analyzer import ContentAnalyzer
 from celery import current_app
 import logging
 from ddtrace import tracer
@@ -106,6 +107,55 @@ def job_detail(request, job_id):
     pages_with_code = pages.filter(code_blocks__isnull=False).exclude(code_blocks=[]).count()
     logger.info(f"Pages with examples: {pages_with_examples}")
     logger.info(f"Pages with code: {pages_with_code}")
+    
+    # Embeddings metrics
+    pages_with_embeddings = pages.filter(page_embedding__isnull=False).exclude(page_embedding=[]).count()
+    embeddings_percentage = (pages_with_embeddings / page_count * 100) if page_count > 0 else 0
+    logger.info(f"Pages with embeddings: {pages_with_embeddings} ({embeddings_percentage}%)")
+    
+    # AI Analysis metrics (optimized to avoid loading all pages into memory)
+    pages_with_ai_analysis = pages.filter(ai_topics__isnull=False).exclude(ai_topics=[]).count()
+    ai_analysis_percentage = (pages_with_ai_analysis / page_count * 100) if page_count > 0 else 0
+    
+    # Calculate average topics per analyzed page (optimized with database aggregation)
+    # Instead of loading all pages, we use only() to fetch just the fields we need
+    analyzed_pages = pages.exclude(ai_topics=[]).exclude(ai_topics__isnull=True).only('ai_topics', 'ai_learning_objectives')
+    
+    # For reasonable performance, we'll sample if there are too many pages
+    if pages_with_ai_analysis > 100:
+        # Sample 100 pages to estimate averages (much faster)
+        analyzed_sample = analyzed_pages[:100]
+        total_topics = sum(len(page.ai_topics or []) for page in analyzed_sample)
+        total_los = sum(len(page.ai_learning_objectives or []) for page in analyzed_sample)
+        sample_size = len(list(analyzed_sample))
+        
+        avg_topics_per_page = (total_topics / sample_size) if sample_size > 0 else 0
+        avg_los_per_page = (total_los / sample_size) if sample_size > 0 else 0
+        
+        # Bloom level distribution from sample
+        bloom_levels = {}
+        for page in analyzed_sample:
+            for lo in (page.ai_learning_objectives or []):
+                level = lo.get('bloom_level', 'unknown')
+                bloom_levels[level] = bloom_levels.get(level, 0) + 1
+    else:
+        # For small datasets, calculate exactly
+        total_topics = sum(len(page.ai_topics or []) for page in analyzed_pages)
+        total_los = sum(len(page.ai_learning_objectives or []) for page in analyzed_pages)
+        
+        avg_topics_per_page = (total_topics / pages_with_ai_analysis) if pages_with_ai_analysis > 0 else 0
+        avg_los_per_page = (total_los / pages_with_ai_analysis) if pages_with_ai_analysis > 0 else 0
+        
+        # Bloom level distribution
+        bloom_levels = {}
+        for page in analyzed_pages:
+            for lo in (page.ai_learning_objectives or []):
+                level = lo.get('bloom_level', 'unknown')
+                bloom_levels[level] = bloom_levels.get(level, 0) + 1
+    
+    logger.info(f"Pages with AI analysis: {pages_with_ai_analysis} ({ai_analysis_percentage}%)")
+    logger.info(f"Avg topics per page: {avg_topics_per_page:.1f}, Avg LOs per page: {avg_los_per_page:.1f}")
+    
     # Get sample pages
     sample_pages = pages.select_related('job').order_by('-crawled_at')[:20]
     logger.info(f"Sample pages: {sample_pages}")
@@ -126,6 +176,13 @@ def job_detail(request, job_id):
         'avg_readability': round(avg_readability, 1) if avg_readability else None,
         'pages_with_examples': pages_with_examples,
         'pages_with_code': pages_with_code,
+        'pages_with_embeddings': pages_with_embeddings,
+        'embeddings_percentage': round(embeddings_percentage, 1),
+        'pages_with_ai_analysis': pages_with_ai_analysis,
+        'ai_analysis_percentage': round(ai_analysis_percentage, 1),
+        'avg_topics_per_page': round(avg_topics_per_page, 1),
+        'avg_los_per_page': round(avg_los_per_page, 1),
+        'bloom_levels': bloom_levels,
         'pages_per_minute': round(pages_per_minute, 2),
         'sample_pages': sample_pages,
         'errors': errors[:20],
@@ -361,6 +418,7 @@ def client_pages(request, client_id):
     depth_filter = request.GET.get('depth', '')
     has_examples = request.GET.get('has_examples', '')
     has_code = request.GET.get('has_code', '')
+    has_embeddings = request.GET.get('has_embeddings', '')
     quality_filter = request.GET.get('quality', '')
     search_query = request.GET.get('q', '')
     
@@ -379,6 +437,11 @@ def client_pages(request, client_id):
     
     if has_code == 'true':
         pages = pages.filter(code_blocks__isnull=False).exclude(code_blocks=[])
+    
+    if has_embeddings == 'true':
+        pages = pages.filter(page_embedding__isnull=False).exclude(page_embedding=[])
+    elif has_embeddings == 'false':
+        pages = pages.filter(Q(page_embedding__isnull=True) | Q(page_embedding=[]))
     
     if quality_filter == 'high':
         # High quality: good readability and substantial content
@@ -459,6 +522,10 @@ def client_pages(request, client_id):
     pages_with_troubleshooting = pages.filter(has_troubleshooting=True).count()
     avg_content_diversity = pages.aggregate(avg=Avg('content_type_diversity'))['avg'] or 0
     
+    # Embeddings metrics
+    pages_with_embeddings = pages.filter(page_embedding__isnull=False).exclude(page_embedding=[]).count()
+    embeddings_percentage = (pages_with_embeddings / total_count * 100) if total_count > 0 else 0
+    
     # Calculate percentage scores
     eeat_percentage = 0
     rag_percentage = 0
@@ -499,6 +566,10 @@ def client_pages(request, client_id):
         'pages_with_troubleshooting': pages_with_troubleshooting,
         'avg_content_diversity': round(avg_content_diversity, 1),
         
+        # Embeddings metrics
+        'pages_with_embeddings': pages_with_embeddings,
+        'embeddings_percentage': round(embeddings_percentage, 1),
+        
         # Filter options
         'doc_types': doc_types,
         'jobs': jobs,
@@ -510,6 +581,7 @@ def client_pages(request, client_id):
         'current_depth': depth_filter,
         'current_has_examples': has_examples,
         'current_has_code': has_code,
+        'current_has_embeddings': has_embeddings,
         'current_quality': quality_filter,
         'current_search': search_query,
         'current_sort': sort_by,
@@ -683,6 +755,195 @@ def restart_job(request, job_id):
     return redirect('dashboard:job_detail', job_id=job_id)
 
 
+@require_POST
+def generate_job_embeddings(request, job_id):
+    """
+    Trigger embedding generation for all pages in a job via Celery.
+    
+    Enqueues a separate Celery task for each page that needs embeddings.
+    """
+    job = get_object_or_404(CrawlJob, id=job_id)
+    
+    # Check if force regeneration is requested
+    force = request.POST.get('force') == 'true'
+    
+    # Filter pages: all if force, otherwise only those without embeddings
+    if force:
+        pages = CrawledPage.objects.filter(job=job)
+    else:
+        from django.db.models import Q
+        pages = CrawledPage.objects.filter(
+            job=job
+        ).filter(
+            Q(page_embedding__isnull=True) | Q(page_embedding=[])
+        )
+    
+    count = pages.count()
+    
+    if count == 0:
+        if force:
+            messages.warning(request, f'No pages found in job #{job_id}.')
+        else:
+            messages.info(
+                request, 
+                f'All pages in job #{job_id} already have embeddings. '
+                'Use "Force regenerate" to recompute them.'
+            )
+        return redirect('dashboard:job_detail', job_id=job_id)
+    
+    # Enqueue Celery tasks for each page
+    for page in pages:
+        generate_page_embeddings_task.delay(page.id, force=force)
+    
+    messages.success(
+        request,
+        f'Embedding generation started for {count} page(s) in job #{job_id}. '
+        f'This will take approximately {count * 2} seconds. '
+        'Refresh this page or check individual pages to see progress.'
+    )
+    
+    return redirect('dashboard:job_detail', job_id=job_id)
+
+
+@require_POST
+def analyze_job_content(request, job_id):
+    """
+    Trigger AI content analysis for all pages in a job.
+    
+    Analyzes pages to extract topics, learning objectives, and prerequisite chains.
+    """
+    from decouple import config
+    from django.db.models import Q
+    
+    job = get_object_or_404(CrawlJob, id=job_id)
+    
+    # Get API key
+    api_key = config("OPENAI_API_KEY", default=None) or config("OPENAI_KEY", default=None)
+    if not api_key:
+        messages.error(request, "OPENAI_API_KEY not configured. Cannot analyze content.")
+        return redirect('dashboard:job_detail', job_id=job_id)
+    
+    # Check if force re-analysis is requested
+    force = request.POST.get('force') == 'true'
+    
+    # Filter pages: all if force, otherwise only those without AI analysis
+    queryset = CrawledPage.objects.filter(job=job)
+    queryset = queryset.exclude(main_content__isnull=True).exclude(main_content="")
+    
+    # Skip certain doc types to save costs
+    # Note: 'unknown' is NOT skipped because AI analysis reclassifies pages
+    skip_types = ['navigation', 'landing', 'changelog']
+    queryset = queryset.exclude(doc_type__in=skip_types)
+    
+    if not force:
+        queryset = queryset.filter(
+            Q(ai_topics__isnull=True) | Q(ai_topics=[])
+        )
+    
+    count = queryset.count()
+    
+    if count == 0:
+        if force:
+            messages.warning(request, f'No analyzable pages found in job #{job_id}.')
+        else:
+            messages.info(
+                request, 
+                f'All pages in job #{job_id} already have AI analysis. '
+                'Use "Force reanalyze" to recompute.'
+            )
+        return redirect('dashboard:job_detail', job_id=job_id)
+    
+    # Estimate cost
+    estimated_cost = count * 0.00015
+    estimated_time_minutes = (count * 2) / 60
+    
+    messages.info(
+        request,
+        f'Starting AI content analysis for {count} page(s) in job #{job_id}. '
+        f'Estimated cost: ${estimated_cost:.4f}, '
+        f'estimated time: {estimated_time_minutes:.1f} minutes. '
+        'This will run in the background. Refresh this page to see progress.'
+    )
+    
+    # TODO: In the future, this should be a Celery task for better async handling
+    # For now, we'll process synchronously with a limit to avoid timeouts
+    
+    analyzer = ContentAnalyzer(openai_api_key=api_key)
+    success_count = 0
+    error_count = 0
+    
+    # Process pages (limit to 50 to avoid timeout)
+    batch_limit = min(count, 50)
+    for page in queryset[:batch_limit]:
+        try:
+            result = analyzer.analyze_page(
+                page_id=page.id,
+                url=page.url,
+                title=page.title,
+                main_content=page.main_content,
+                sections=page.sections or [],
+                doc_type=page.doc_type,
+                existing_prerequisites=page.prerequisites or [],
+                existing_learning_objectives=page.learning_objectives or [],
+            )
+            
+            # Save results
+            page.ai_topics = result["ai_topics"]
+            page.ai_learning_objectives = result["ai_learning_objectives"]
+            page.ai_prerequisite_chain = result["ai_prerequisite_chain"]
+            page.ai_analysis_metadata = result["ai_analysis_metadata"]
+            
+            # Merge with existing fields
+            enhanced_prereqs, enhanced_los = analyzer.merge_with_existing(
+                ai_result=result,
+                existing_prerequisites=page.prerequisites or [],
+                existing_learning_objectives=page.learning_objectives or [],
+            )
+            page.prerequisites = enhanced_prereqs
+            page.learning_objectives = enhanced_los
+            page.has_prerequisites = len(enhanced_prereqs) > 0
+            page.has_learning_objectives = len(enhanced_los) > 0
+            
+            page.save(update_fields=[
+                'ai_topics',
+                'ai_learning_objectives',
+                'ai_prerequisite_chain',
+                'ai_analysis_metadata',
+                'prerequisites',
+                'learning_objectives',
+                'has_prerequisites',
+                'has_learning_objectives',
+            ])
+            
+            success_count += 1
+            
+        except Exception as exc:
+            logger.error(f"Error analyzing page {page.id}: {exc}")
+            error_count += 1
+            continue
+    
+    if success_count > 0:
+        actual_cost = success_count * 0.00015
+        messages.success(
+            request,
+            f'AI analysis completed: {success_count} pages analyzed '
+            f'(${actual_cost:.4f} cost). '
+            f'{error_count} errors.'
+        )
+    else:
+        messages.error(request, f'AI analysis failed for all pages. Check logs.')
+    
+    if count > batch_limit:
+        messages.warning(
+            request,
+            f'Note: Only processed {batch_limit} of {count} pages to avoid timeout. '
+            'Run the management command for larger batches: '
+            f'python manage.py analyze_content --job-id {job_id}'
+        )
+    
+    return redirect('dashboard:job_detail', job_id=job_id)
+
+
 def job_logs(request, job_id):
     """
     Stream or display logs for a specific job.
@@ -805,6 +1066,28 @@ def capture_page_screenshot(request, page_id):
         'Refresh the page in a few seconds to see the result.'
     )
     
+    return redirect('dashboard:page_detail', page_id=page_id)
+
+
+@require_POST
+def generate_page_embeddings(request, page_id):
+    """
+    Trigger embedding generation for a specific page via Celery.
+
+    This uses the same logic as the `generate_embeddings` management command,
+    but scoped to a single page from the UI.
+    """
+    page = get_object_or_404(CrawledPage, id=page_id)
+
+    # Enqueue Celery task (force recompute to keep UI deterministic)
+    generate_page_embeddings_task.delay(page.id, force=True)
+
+    messages.success(
+        request,
+        f'Embedding generation started for "{page.title or page.url}". '
+        'Refresh this page in a few seconds to see updated embedding status.'
+    )
+
     return redirect('dashboard:page_detail', page_id=page_id)
 
 

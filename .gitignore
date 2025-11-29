@@ -1,0 +1,49 @@
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django
+*.log
+logs/
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+*.sql
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scrapy
+.scrapy/
+
+# Celery
+celerybeat-schedule*
+
+# Playwright
+playwright/.cache/
+
+# Screenshots
+screenshots/

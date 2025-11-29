@@ -85,6 +85,69 @@ class CrawledPage(models.Model):
     sections = models.JSONField(default=list, help_text="Semantic sections with headings")
     table_of_contents = models.JSONField(default=list)
     
+    # Embeddings (OpenAI text-embedding-3-small)
+    section_embeddings = models.JSONField(
+        default=list,
+        help_text="Per-section embeddings (model: text-embedding-3-small)",
+    )
+    page_embedding = models.JSONField(
+        default=list,
+        help_text="Full-page embedding (model: text-embedding-3-small)",
+    )
+    learning_objective_embeddings = models.JSONField(
+        default=list,
+        help_text="[{objective, bloom_level, difficulty, embedding}] - embeddings for each learning objective"
+    )
+    
+    # ========================================
+    # AI-Enhanced Content Analysis
+    # ========================================
+    ai_topics = models.JSONField(
+        default=list,
+        help_text="[{name, relevance, category, parent_topic, child_topics, related_topics}] - hierarchical topics"
+    )
+    ai_learning_objectives = models.JSONField(
+        default=list,
+        help_text="[{objective, bloom_level, bloom_verb, difficulty, estimated_time_minutes, measurable}] - structured LOs"
+    )
+    ai_prerequisite_chain = models.JSONField(
+        default=list,
+        help_text="[{concept, type, importance, description}] - linked prerequisites"
+    )
+    ai_summary = models.TextField(
+        blank=True,
+        default="",
+        help_text="AI-generated 1-2 sentence summary for clustering"
+    )
+    ai_audience_level = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        help_text="AI-classified audience level: beginner, intermediate, advanced"
+    )
+    ai_key_concepts = models.JSONField(
+        default=list,
+        help_text="[{term, definition, is_new}] - key concepts introduced or used"
+    )
+    ai_doc_type = models.CharField(
+        max_length=30,
+        blank=True,
+        default="",
+        help_text="AI-classified doc type using Diátaxis framework"
+    )
+    ai_quality_indicators = models.JSONField(
+        default=dict,
+        help_text="{completeness_score, needs_code_examples, needs_visuals, suggested_improvements}"
+    )
+    ai_related_topics = models.JSONField(
+        default=list,
+        help_text="List of related topic strings for cross-linking"
+    )
+    ai_analysis_metadata = models.JSONField(
+        default=dict,
+        help_text="{model, timestamp, processing_time_seconds, content_length}"
+    )
+    
     # Special content detection
     api_endpoints = models.JSONField(default=list)
     parameters = models.JSONField(default=list)
