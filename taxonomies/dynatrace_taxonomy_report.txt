@@ -1,0 +1,331 @@
+============================================================
+TAXONOMY BUILDER REPORT - DynaTrace
+============================================================
+
+Generated: 2025-11-30T22:12:37.858191
+
+## Overall Statistics
+
+Total Pages Analyzed: 2405
+Total Topics: 14
+Total Clusters: 50
+Avg Cluster Size: 47.8 pages
+Avg Cohesion: 0.69 (0-1 scale)
+
+## Prerequisite Graph
+
+Total Nodes: 4014
+Total Edges: 6057
+Page Nodes: 2405
+Concept Nodes: 1609
+
+## Foundational Pages (by PageRank)
+
+- Workflows Connectors — Dynatrace Docs (score: 0.003)
+- Extend metric observability — Dynatrace Docs (score: 0.002)
+- Store Dynatrace images in private registries — Dynatrace Docs (score: 0.001)
+- Ingest Tenable vulnerability findings, scan events, and audit logs — Dynatrace Docs (score: 0.001)
+- Metrics API - Metric selector — Dynatrace Docs (score: 0.001)
+
+## Clusters
+
+
+### Cluster 34: Dynatrace Configuration and Monitoring
+- Size: 167 pages
+- Cohesion: 0.59
+- Primary Topic: Configuration
+- Difficulty: intermediate
+
+### Cluster 37: Business Events Monitoring
+- Size: 140 pages
+- Cohesion: 0.58
+- Primary Topic: Business Events
+- Difficulty: intermediate
+
+### Cluster 1: Monitoring Azure Services with Dynatrace
+- Size: 138 pages
+- Cohesion: 0.75
+- Primary Topic: Service Metrics
+- Difficulty: intermediate
+
+### Cluster 2: AWS Monitoring with Dynatrace
+- Size: 125 pages
+- Cohesion: 0.74
+- Primary Topic: Service Metrics
+- Difficulty: intermediate
+
+### Cluster 8: Log Monitoring Essentials
+- Size: 110 pages
+- Cohesion: 0.66
+- Primary Topic: Log Monitoring
+- Difficulty: intermediate
+
+### Cluster 26: Dynatrace Operator Integration Guide
+- Size: 101 pages
+- Cohesion: 0.56
+- Primary Topic: Dynatrace Operator
+- Difficulty: intermediate
+
+### Cluster 29: OneAgent Monitoring and Configuration
+- Size: 91 pages
+- Cohesion: 0.66
+- Primary Topic: OneAgent
+- Difficulty: intermediate
+
+### Cluster 7: DQL Queries and Security Management
+- Size: 70 pages
+- Cohesion: 0.65
+- Primary Topic: DQL Queries
+- Difficulty: intermediate
+
+### Cluster 10: ActiveGate Configuration Guide
+- Size: 70 pages
+- Cohesion: 0.70
+- Primary Topic: ActiveGate Configuration
+- Difficulty: intermediate
+
+### Cluster 48: Dynatrace API Authentication and Migration
+- Size: 69 pages
+- Cohesion: 0.57
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 11: Dynatrace Authentication APIs
+- Size: 68 pages
+- Cohesion: 0.57
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 15: Dynatrace Google Cloud Integration
+- Size: 67 pages
+- Cohesion: 0.75
+- Primary Topic: Dynatrace Integration
+- Difficulty: intermediate
+
+### Cluster 3: Dynatrace Metrics API Overview
+- Size: 63 pages
+- Cohesion: 0.70
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 5: Kubernetes Log Management with Dynatrace
+- Size: 61 pages
+- Cohesion: 0.68
+- Primary Topic: Dynatrace Operator
+- Difficulty: intermediate
+
+### Cluster 17: User Action Properties Guide
+- Size: 59 pages
+- Cohesion: 0.65
+- Primary Topic: User Action Properties
+- Difficulty: intermediate
+
+### Cluster 30: Management Zones and Permissions
+- Size: 59 pages
+- Cohesion: 0.64
+- Primary Topic: Management Zones
+- Difficulty: intermediate
+
+### Cluster 13: DQL Commands Overview
+- Size: 54 pages
+- Cohesion: 0.61
+- Primary Topic: DQL Commands
+- Difficulty: intermediate
+
+### Cluster 12: Network Zones Configuration
+- Size: 48 pages
+- Cohesion: 0.64
+- Primary Topic: Network Zones
+- Difficulty: intermediate
+
+### Cluster 28: OpenTelemetry Integration with Dynatrace
+- Size: 48 pages
+- Cohesion: 0.68
+- Primary Topic: OpenTelemetry
+- Difficulty: intermediate
+
+### Cluster 23: Real User Monitoring Guide
+- Size: 46 pages
+- Cohesion: 0.65
+- Primary Topic: Real User Monitoring
+- Difficulty: intermediate
+
+### Cluster 24: Dynatrace Account Management
+- Size: 43 pages
+- Cohesion: 0.71
+- Primary Topic: Account Management
+- Difficulty: intermediate
+
+### Cluster 32: Mobile Application Authentication and Monitoring
+- Size: 43 pages
+- Cohesion: 0.63
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 35: Dynatrace Service Detection and Configuration
+- Size: 42 pages
+- Cohesion: 0.71
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 42: Data Visualization Techniques
+- Size: 41 pages
+- Cohesion: 0.69
+- Primary Topic: Data Mapping
+- Difficulty: intermediate
+
+### Cluster 44: Synthetic Monitoring Overview
+- Size: 41 pages
+- Cohesion: 0.70
+- Primary Topic: Synthetic Monitoring
+- Difficulty: intermediate
+
+### Cluster 47: Cluster API Authentication
+- Size: 40 pages
+- Cohesion: 0.69
+- Primary Topic: API Authentication
+- Difficulty: intermediate
+
+### Cluster 22: Monitoring Configuration Extensions
+- Size: 38 pages
+- Cohesion: 0.66
+- Primary Topic: Monitoring Configuration
+- Difficulty: intermediate
+
+### Cluster 21: Dynatrace Operator Migration Guide
+- Size: 34 pages
+- Cohesion: 0.67
+- Primary Topic: Dynatrace Operator
+- Difficulty: intermediate
+
+### Cluster 19: Vulnerabilities API Overview
+- Size: 31 pages
+- Cohesion: 0.71
+- Primary Topic: Vulnerabilities API
+- Difficulty: intermediate
+
+### Cluster 9: Dynatrace Workflows Guide
+- Size: 30 pages
+- Cohesion: 0.70
+- Primary Topic: Workflows
+- Difficulty: intermediate
+
+### Cluster 45: Data Privacy Configuration
+- Size: 30 pages
+- Cohesion: 0.70
+- Primary Topic: Data Privacy
+- Difficulty: intermediate
+
+### Cluster 16: Authentication and Deletion API
+- Size: 29 pages
+- Cohesion: 0.68
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 41: Dynatrace Security Notifications
+- Size: 28 pages
+- Cohesion: 0.69
+- Primary Topic: Security Notifications
+- Difficulty: intermediate
+
+### Cluster 31: Synthetic Locations API Overview
+- Size: 24 pages
+- Cohesion: 0.77
+- Primary Topic: Synthetic Locations API
+- Difficulty: intermediate
+
+### Cluster 33: Davis CoPilot and Anomaly Detection Guide
+- Size: 24 pages
+- Cohesion: 0.71
+- Primary Topic: Davis CoPilot
+- Difficulty: intermediate
+
+### Cluster 18: Dynatrace Dashboard Management
+- Size: 23 pages
+- Cohesion: 0.68
+- Primary Topic: Dashboards
+- Difficulty: intermediate
+
+### Cluster 25: Service-Level Objectives Management
+- Size: 21 pages
+- Cohesion: 0.76
+- Primary Topic: Service-Level Objectives
+- Difficulty: intermediate
+
+### Cluster 27: Response Codes and Attributes Management
+- Size: 18 pages
+- Cohesion: 0.66
+- Primary Topic: Response Codes
+- Difficulty: intermediate
+
+### Cluster 20: Policy Management API Overview
+- Size: 17 pages
+- Cohesion: 0.64
+- Primary Topic: Policy Management API
+- Difficulty: intermediate
+
+### Cluster 38: OpenPipeline API Overview
+- Size: 17 pages
+- Cohesion: 0.69
+- Primary Topic: OpenPipeline API
+- Difficulty: intermediate
+
+### Cluster 6: Events API Overview and Migration
+- Size: 16 pages
+- Cohesion: 0.71
+- Primary Topic: Events API
+- Difficulty: intermediate
+
+### Cluster 36: Dynatrace Monaco CLI Overview
+- Size: 16 pages
+- Cohesion: 0.73
+- Primary Topic: Dynatrace Monaco CLI
+- Difficulty: intermediate
+
+### Cluster 39: Dynatrace API Authentication and Extensions
+- Size: 16 pages
+- Cohesion: 0.72
+- Primary Topic: Authentication
+- Difficulty: intermediate
+
+### Cluster 0: OneAgent SDK for Mobile Apps
+- Size: 15 pages
+- Cohesion: 0.76
+- Primary Topic: OneAgent SDK
+- Difficulty: intermediate
+
+### Cluster 14: Deployment API Overview
+- Size: 13 pages
+- Cohesion: 0.74
+- Primary Topic: Deployment API
+- Difficulty: intermediate
+
+### Cluster 43: Credential Vault API Management
+- Size: 12 pages
+- Cohesion: 0.77
+- Primary Topic: Credential Vault API
+- Difficulty: intermediate
+
+### Cluster 46: Cluster Management and High Availability
+- Size: 11 pages
+- Cohesion: 0.64
+- Primary Topic: Cluster Management
+- Difficulty: intermediate
+
+### Cluster 49: OpenPipeline Ingest API Overview
+- Size: 9 pages
+- Cohesion: 0.86
+- Primary Topic: OpenPipeline Ingest API
+- Difficulty: intermediate
+
+### Cluster 4: Business Flow Monitoring in Dynatrace
+- Size: 8 pages
+- Cohesion: 0.80
+- Primary Topic: Business Flow
+- Difficulty: intermediate
+
+### Cluster 40: EdgeConnect Configuration and Deployment
+- Size: 8 pages
+- Cohesion: 0.79
+- Primary Topic: EdgeConnect
+- Difficulty: intermediate

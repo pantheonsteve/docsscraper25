@@ -20,6 +20,7 @@ urlpatterns = [
     path('crawl/new/', views.new_crawl, name='new_crawl'),
     path('client/<int:client_id>/', views.client_detail, name='client_detail'),
     path('client/<int:client_id>/pages/', views.client_pages, name='client_pages'),
+    path('client/<int:client_id>/taxonomy/', views.client_taxonomy, name='client_taxonomy'),
     path('page/<int:page_id>/', views.page_detail, name='page_detail'),
     path('page/<int:page_id>/raw-html/', views.page_raw_html, name='page_raw_html'),
     path('page/<int:page_id>/screenshot/', views.page_screenshot, name='page_screenshot'),

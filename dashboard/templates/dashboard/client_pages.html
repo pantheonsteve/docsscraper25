@@ -4,10 +4,16 @@
 
 {% block content %}
 <div style="margin-bottom: 2rem;">
-    <h1 style="margin: 0;">{{ client.name }} - Crawled Pages</h1>
-    <p style="color: #7f8c8d; margin-top: 0.5rem;">
-        <a href="{% url 'dashboard:client_detail' client.id %}">← Back to Client Overview</a>
-    </p>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="margin: 0;">{{ client.name }} - Crawled Pages</h1>
+            <p style="color: #7f8c8d; margin-top: 0.5rem;">
+                <a href="{% url 'dashboard:client_detail' client.id %}">← Back to Client Overview</a>
+                <span style="margin: 0 0.5rem;">|</span>
+                <a href="{% url 'dashboard:client_taxonomy' client.id %}" style="color: #48bb78; text-decoration: none; font-weight: 600;">📚 View Taxonomy</a>
+            </p>
+        </div>
+    </div>
 </div>
 
 <div class="stats" style="margin-bottom: 2rem;">

@@ -376,6 +376,124 @@ python manage.py generate_embeddings --job-id 57 --limit 100</pre>
 
 <div class="cmd-section">
     <div class="cmd-header">
+        <span class="cmd-name">python manage.py build_taxonomy</span>
+        <span class="cmd-badge">AI / Taxonomy</span>
+    </div>
+    <p class="cmd-description">
+        Build a hierarchical documentation taxonomy from AI-analyzed pages using semantic clustering 
+        and GPT-4o-mini. Creates organized topic categories with rich metadata, learning outcomes, 
+        and prerequisite relationships. Outputs JSON, Markdown, and prerequisite graph visualizations.
+    </p>
+    <pre class="code-block">
+# Build taxonomy with optimal settings (recommended)
+python manage.py build_taxonomy \
+    --client-id 5 \
+    --n-clusters 50 \
+    --min-cluster-size 5 \
+    --max-cluster-size 30
+
+# Quick test with first 100 pages
+python manage.py build_taxonomy \
+    --client-id 5 \
+    --n-clusters 20 \
+    --limit 100
+
+# Skip GPT summaries (faster, but less useful)
+python manage.py build_taxonomy \
+    --client-id 5 \
+    --skip-summaries
+
+# Use different embedding field for clustering
+python manage.py build_taxonomy \
+    --client-id 5 \
+    --embedding-type page
+
+# Custom output directory
+python manage.py build_taxonomy \
+    --client-id 5 \
+    --output-dir ./custom_taxonomies/
+
+# Dry run to see what would be generated
+python manage.py build_taxonomy \
+    --client-id 5 \
+    --dry-run</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--client-id</code>: Client ID to build taxonomy for (required).</dd>
+        <dd><code>--n-clusters</code>: Number of clusters to create. Use 'auto' for automatic selection or specific number (default: auto).</dd>
+        <dd><code>--min-cluster-size</code>: Minimum pages per cluster (default: 5).</dd>
+        <dd><code>--max-cluster-size</code>: Maximum pages per cluster (default: 50).</dd>
+        <dd><code>--clustering-method</code>: Algorithm to use: 'kmeans', 'hierarchical', or 'dbscan' (default: kmeans).</dd>
+        <dd><code>--embedding-type</code>: Which embeddings to use: 'lo' (learning objectives), 'page', or 'section' (default: lo).</dd>
+        <dd><code>--limit</code>: Only process first N pages (useful for testing).</dd>
+        <dd><code>--skip-summaries</code>: Skip GPT-generated cluster summaries (faster but less useful).</dd>
+        <dd><code>--output-dir</code>: Directory to save outputs (default: ./taxonomies/).</dd>
+        <dd><code>--dry-run</code>: Show what would be generated without creating files.</dd>
+    </dl>
+    <div class="tag-group">
+        <span class="tag">GPT-4o-mini</span>
+        <span class="tag">Hierarchical Topics</span>
+        <span class="tag">Semantic Clustering</span>
+        <span class="tag">Learning Outcomes</span>
+        <span class="tag">Prerequisites</span>
+        <span class="tag">~$0.02/taxonomy</span>
+    </div>
+    <p class="cmd-meta">
+        <strong>What's generated:</strong>
+    </p>
+    <ul class="cmd-meta" style="margin-left: 1.5rem; margin-top: 0.5rem; color: #4b5563; font-size: 0.9rem;">
+        <li><strong>Hierarchical Topics</strong>: 10-20 parent categories with rich metadata (overview, learning outcomes, target audience, key technologies)</li>
+        <li><strong>Module Clusters</strong>: 20-100 semantically grouped modules with AI-generated names and descriptions</li>
+        <li><strong>Statistics</strong>: Difficulty breakdowns, time estimates, content type analysis, cohesion scores</li>
+        <li><strong>Prerequisite Graph</strong>: Directed graph showing learning dependencies between pages and concepts</li>
+        <li><strong>Export Formats</strong>: JSON (full data), Markdown (readable), Mermaid (graph visualization), DOT (graph visualization)</li>
+    </ul>
+    <p class="cmd-meta" style="margin-top: 1rem;">
+        <strong>Requirements:</strong> Pages must be AI-analyzed first (run <code>analyze_content</code>). 
+        OPENAI_API_KEY required for rich summaries.
+    </p>
+    <p class="cmd-meta">
+        <strong>Output files:</strong> {client_slug}_taxonomy_{date}.json, {client_slug}_taxonomy_{date}.md, 
+        {client_slug}_prerequisite_graph.mmd, {client_slug}_prerequisite_graph.dot, {client_slug}_taxonomy_report.txt
+    </p>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
+        <span class="cmd-name">python manage.py sync_doc_types</span>
+        <span class="cmd-badge">Cleanup / Sync</span>
+    </div>
+    <p class="cmd-description">
+        Sync the <code>doc_type</code> field with <code>ai_doc_type</code> for pages that have been 
+        AI-analyzed. Useful after running content analysis to update the primary doc_type classification 
+        with the AI's more accurate Diátaxis-based classification.
+    </p>
+    <pre class="code-block">
+# Sync all pages (dry-run first)
+python manage.py sync_doc_types --dry-run
+
+# Actually sync all pages
+python manage.py sync_doc_types
+
+# Sync only pages in a specific job
+python manage.py sync_doc_types --job-id 57
+
+# Sync only pages for a specific client
+python manage.py sync_doc_types --client-id 3</pre>
+    <dl class="cmd-args">
+        <dt>Key options</dt>
+        <dd><code>--job-id</code>: Sync only pages in a specific crawl job.</dd>
+        <dd><code>--client-id</code>: Sync only pages for a specific client.</dd>
+        <dd><code>--dry-run</code>: Show what would be updated without making changes.</dd>
+    </dl>
+    <p class="cmd-meta">
+        <strong>When to use:</strong> After running <code>analyze_content</code> to update the primary 
+        doc_type field with AI classifications. This helps keep data consistent across the system.
+    </p>
+</div>
+
+<div class="cmd-section">
+    <div class="cmd-header">
         <span class="cmd-name">python manage.py start_celery</span>
         <span class="cmd-badge">Infrastructure</span>
     </div>

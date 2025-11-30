@@ -1228,7 +1228,7 @@ def page_json(request, page_id):
             'average_paragraph_length': page.average_paragraph_length,
             'code_blocks_count': len(page.code_blocks) if page.code_blocks else 0,
             'images_count': len(page.images) if page.images else 0,
-            'tables_count': len(page.tables) if page.tables else 0,
+            'tables_counts': len(page.tables) if page.tables else 0,
             'warnings_count': len(page.warnings) if page.warnings else 0,
             'tips_count': len(page.tips) if page.tips else 0,
         },
@@ -1311,3 +1311,66 @@ def page_json(request, page_id):
             'json_data': json.dumps(page_data, indent=2, cls=DjangoJSONEncoder),
         }
         return render(request, 'dashboard/page_json.html', context)
+
+
+def client_taxonomy(request, client_id):
+    """
+    Display the taxonomy view for a specific client.
+    
+    Shows the hierarchical organization of documentation based on:
+    - Semantic clustering (from embeddings)
+    - Topic categorization (from AI analysis)
+    - Prerequisite relationships
+    """
+    from django.conf import settings
+    from pathlib import Path
+    import json
+    import glob
+    
+    client = get_object_or_404(Client, id=client_id)
+    logger.info(f"Client taxonomy view called for client {client_id}")
+    
+    # Look for taxonomy files in the taxonomies directory
+    taxonomies_dir = Path(settings.BASE_DIR) / 'taxonomies'
+    
+    # Find all taxonomy JSON files for this client
+    # Pattern: {client_slug}_taxonomy_*.json
+    taxonomy_files = []
+    if taxonomies_dir.exists():
+        pattern = f"{client.slug}_taxonomy_*.json"
+        taxonomy_files = sorted(
+            taxonomies_dir.glob(pattern),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True  # Most recent first
+        )
+    
+    taxonomy_data = None
+    taxonomy_file_path = None
+    error_message = None
+    
+    if taxonomy_files:
+        # Load the most recent taxonomy file
+        taxonomy_file_path = taxonomy_files[0]
+        try:
+            with open(taxonomy_file_path, 'r') as f:
+                taxonomy_data = json.load(f)
+            logger.info(f"Loaded taxonomy from {taxonomy_file_path}")
+        except Exception as e:
+            logger.error(f"Error loading taxonomy file {taxonomy_file_path}: {e}")
+            error_message = f"Error loading taxonomy: {str(e)}"
+    else:
+        logger.warning(f"No taxonomy files found for client {client.slug}")
+        error_message = (
+            f"No taxonomy has been generated for {client.name} yet. "
+            f"Run 'python manage.py build_taxonomy --client-id {client_id}' to create one."
+        )
+    
+    context = {
+        'client': client,
+        'taxonomy': taxonomy_data,
+        'taxonomy_file': taxonomy_file_path.name if taxonomy_file_path else None,
+        'available_taxonomies': [f.name for f in taxonomy_files],
+        'error_message': error_message,
+    }
+    
+    return render(request, 'dashboard/client_taxonomy.html', context)

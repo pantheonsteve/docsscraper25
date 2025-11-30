@@ -1,0 +1,990 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}{{ client.name }} - Taxonomy - DocAnalyzer{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: #f8fafc;
+    }
+    
+    .taxonomy-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    /* Header */
+    .taxonomy-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .taxonomy-header h1 {
+        font-size: 1.75rem;
+        color: #1e293b;
+        margin: 0 0 0.5rem 0;
+        font-weight: 700;
+    }
+    
+    .taxonomy-header p {
+        color: #64748b;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+    
+    .stats-bar {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+    
+    .stat-item strong {
+        color: #1e293b;
+        font-weight: 600;
+    }
+    
+    /* Search */
+    .search-box {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .search-box input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.2s ease;
+    }
+    
+    .search-box input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    /* Taxonomy List */
+    .taxonomy-list {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    /* Topic Section */
+    .topic-section {
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .topic-section:last-child {
+        border-bottom: none;
+    }
+    
+    .topic-header {
+        padding: 1.5rem 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+    
+    .topic-header:hover {
+        background: linear-gradient(135deg, #5a67d8 0%, #6b42a0 100%);
+    }
+    
+    .topic-header.active {
+        background: linear-gradient(135deg, #5a67d8 0%, #6b42a0 100%);
+    }
+    
+    .topic-title {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+    
+    .topic-icon {
+        font-size: 1.25rem;
+        transition: transform 0.2s ease;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .topic-header.active .topic-icon {
+        transform: rotate(90deg);
+    }
+    
+    .topic-name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: white;
+        margin: 0;
+    }
+    
+    .topic-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+    }
+    
+    .topic-metadata {
+        padding: 2rem 2rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .topic-overview {
+        color: #475569;
+        font-size: 1rem;
+        line-height: 1.7;
+        margin-bottom: 1.5rem;
+    }
+    
+    .metadata-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .metadata-section {
+        background: white;
+        padding: 1.25rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .metadata-section-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .metadata-section-content {
+        color: #1e293b;
+        font-size: 0.9375rem;
+        line-height: 1.6;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+    
+    .stat-label {
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+    
+    .stat-value {
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .learning-outcomes-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .learning-outcomes-list li {
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+        color: #475569;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+    
+    .learning-outcomes-list li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #10b981;
+        font-weight: bold;
+    }
+    
+    .tech-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .tech-badge {
+        background: #ede9fe;
+        color: #6b21b6;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .prereq-badge {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-top: 0.5rem;
+    }
+    
+    .difficulty-indicator {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+    
+    .difficulty-beginner {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .difficulty-intermediate {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .difficulty-advanced {
+        background: #fce7f3;
+        color: #9f1239;
+    }
+    
+    /* Topic Content */
+    .topic-content {
+        display: none;
+        padding: 0 2rem 1.5rem 2rem;
+    }
+    
+    .topic-content.active {
+        display: block;
+    }
+    
+    /* Module Section */
+    .module-item {
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .module-header {
+        padding: 1rem 1.5rem;
+        background: white;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s ease;
+        user-select: none;
+    }
+    
+    .module-header:hover {
+        background: #fafafa;
+    }
+    
+    .module-header.active {
+        background: #f8fafc;
+    }
+    
+    .module-title-section {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+    
+    .module-icon {
+        font-size: 1rem;
+        transition: transform 0.2s ease;
+        color: #94a3b8;
+    }
+    
+    .module-header.active .module-icon {
+        transform: rotate(90deg);
+    }
+    
+    .module-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #334155;
+        margin: 0;
+    }
+    
+    .module-meta {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .module-badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .badge-beginner {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .badge-intermediate {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .badge-advanced {
+        background: #fce7f3;
+        color: #9f1239;
+    }
+    
+    .badge-pages {
+        background: #f1f5f9;
+        color: #475569;
+    }
+    
+    /* Pages List */
+    .pages-list {
+        display: none;
+        padding: 1rem 1.5rem 1rem 3rem;
+        background: #fafafa;
+    }
+    
+    .pages-list.active {
+        display: block;
+    }
+    
+    .page-item {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: white;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        border-left: 3px solid #667eea;
+        transition: all 0.2s ease;
+    }
+    
+    .page-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transform: translateX(2px);
+    }
+    
+    .page-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .page-sequence {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+    }
+    
+    .page-main {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .page-title-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .page-title {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 0.9375rem;
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .page-type-badge {
+        font-size: 0.6875rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .page-type-concept {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    
+    .page-type-tutorial {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .page-type-how-to {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .page-type-reference {
+        background: #f3e8ff;
+        color: #6b21a8;
+    }
+    
+    .page-type-guide {
+        background: #e0e7ff;
+        color: #4338ca;
+    }
+    
+    .page-level-badge {
+        font-size: 0.6875rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .page-level-beginner {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .page-level-intermediate {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .page-level-advanced {
+        background: #fce7f3;
+        color: #9f1239;
+    }
+    
+    .page-summary {
+        font-size: 0.875rem;
+        color: #64748b;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+    }
+    
+    .page-objectives {
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    
+    .page-objectives-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .page-objectives-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .page-objectives-list li {
+        font-size: 0.8125rem;
+        color: #475569;
+        padding: 0.25rem 0 0.25rem 1.25rem;
+        position: relative;
+    }
+    
+    .page-objectives-list li:before {
+        content: "→";
+        position: absolute;
+        left: 0;
+        color: #667eea;
+        font-weight: bold;
+    }
+    
+    .page-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin-top: 0.75rem;
+    }
+    
+    .page-link {
+        color: #667eea;
+        text-decoration: none;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        border: 1px solid #e0e7ff;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    
+    .page-link:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .page-prereqs {
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state-text {
+        color: #64748b;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    .command-box {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 0.875rem 1rem;
+        border-radius: 8px;
+        font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        font-size: 0.8125rem;
+        margin: 1rem auto 0;
+        max-width: 600px;
+        text-align: left;
+    }
+    
+    .breadcrumb {
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+    
+    .breadcrumb a {
+        color: #667eea;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+    
+    .breadcrumb a:hover {
+        color: #5a67d8;
+    }
+    
+    .breadcrumb strong {
+        color: #1e293b;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .taxonomy-header {
+            padding: 1.5rem;
+        }
+        
+        .topic-header {
+            padding: 1rem 1.5rem;
+        }
+        
+        .topic-content {
+            padding: 0 1.5rem 1rem 1.5rem;
+        }
+        
+        .module-header {
+            padding: 0.875rem 1rem;
+        }
+        
+        .pages-list {
+            padding: 1rem 1rem 1rem 2rem;
+        }
+        
+        .page-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .page-link {
+            width: 100%;
+            text-align: center;
+        }
+        
+        .stats-bar {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="taxonomy-container">
+    <div class="breadcrumb">
+        <a href="{% url 'dashboard:index' %}">Dashboard</a> / 
+        <a href="{% url 'dashboard:client_detail' client.id %}">{{ client.name }}</a> / 
+        <strong>Taxonomy</strong>
+    </div>
+
+    {% if error_message %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📚</div>
+        <h2 class="empty-state-title">No Taxonomy Available</h2>
+        <p class="empty-state-text">{{ error_message }}</p>
+        <div class="command-box">
+            python manage.py build_taxonomy --client-id {{ client.id }}
+        </div>
+    </div>
+    {% elif taxonomy %}
+    
+    <!-- Header -->
+    <div class="taxonomy-header">
+        <h1>{{ taxonomy.client_name }} Documentation</h1>
+        <p>Last updated: {{ taxonomy.generated_at|slice:"0:10" }}</p>
+        
+        <div class="stats-bar">
+            <div class="stat-item"><strong>{{ taxonomy.statistics.total_pages }}</strong> pages</div>
+            <div class="stat-item"><strong>{{ taxonomy.statistics.total_topics }}</strong> topics</div>
+            <div class="stat-item"><strong>{{ taxonomy.statistics.total_clusters }}</strong> modules</div>
+            <div class="stat-item"><strong>{{ taxonomy.statistics.avg_cohesion|floatformat:2 }}</strong> avg cohesion</div>
+        </div>
+    </div>
+    
+    <!-- Search -->
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search topics, modules, or pages..." autocomplete="off">
+    </div>
+    
+    <!-- Taxonomy List -->
+    <div class="taxonomy-list">
+        {% for topic in taxonomy.taxonomy.root_topics %}
+        <div class="topic-section" data-search="{{ topic.name|lower }}">
+            <div class="topic-header" onclick="toggleTopic(this)">
+                <div class="topic-title">
+                    <span class="topic-icon">▶</span>
+                    <h2 class="topic-name">{{ topic.name }}</h2>
+                </div>
+                <span class="topic-badge">{{ topic.total_pages }} pages</span>
+            </div>
+            
+            {% if topic.overview or topic.statistics %}
+            <div class="topic-metadata">
+                {% if topic.overview %}
+                <p class="topic-overview">{{ topic.overview }}</p>
+                {% endif %}
+                
+                <div class="metadata-grid">
+                    {% if topic.statistics %}
+                    <!-- Statistics -->
+                    <div class="metadata-section">
+                        <div class="metadata-section-title">📊 Category Stats</div>
+                        <div class="metadata-section-content">
+                            <div class="stat-row">
+                                <span class="stat-label">Modules</span>
+                                <span class="stat-value">{{ topic.statistics.total_modules }}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Pages</span>
+                                <span class="stat-value">{{ topic.statistics.total_pages }}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Est. Time</span>
+                                <span class="stat-value">{{ topic.statistics.estimated_hours }} hours</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Level</span>
+                                <span class="stat-value">
+                                    <span class="difficulty-indicator difficulty-{{ topic.statistics.primary_difficulty }}">
+                                        {{ topic.statistics.primary_difficulty }}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if topic.learning_outcomes %}
+                    <!-- Learning Outcomes -->
+                    <div class="metadata-section">
+                        <div class="metadata-section-title">💡 What You'll Learn</div>
+                        <div class="metadata-section-content">
+                            <ul class="learning-outcomes-list">
+                                {% for outcome in topic.learning_outcomes %}
+                                <li>{{ outcome }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if topic.target_audience or topic.key_technologies %}
+                    <!-- Audience & Technologies -->
+                    <div class="metadata-section">
+                        <div class="metadata-section-title">🎯 Best For</div>
+                        <div class="metadata-section-content">
+                            {% if topic.target_audience %}
+                            <p style="margin-bottom: 1rem; color: #475569;">{{ topic.target_audience }}</p>
+                            {% endif %}
+                            
+                            {% if topic.key_technologies %}
+                            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600; text-transform: uppercase;">Key Technologies:</div>
+                            <div class="tech-badges">
+                                {% for tech in topic.key_technologies %}
+                                <span class="tech-badge">{{ tech }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if topic.prerequisites %}
+                <div style="margin-top: 1rem;">
+                    <span style="font-size: 0.875rem; color: #64748b; font-weight: 600;">📌 Prerequisites:</span>
+                    {% for prereq in topic.prerequisites %}
+                    <span class="prereq-badge">{{ prereq }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="topic-content">
+                
+                {% for cluster in topic.clusters %}
+                <div class="module-item" data-search="{{ cluster.name|lower }}">
+                    <div class="module-header" onclick="toggleModule(this, event)">
+                        <div class="module-title-section">
+                            <span class="module-icon">▶</span>
+                            <h3 class="module-name">{{ cluster.name }}</h3>
+                        </div>
+                        <div class="module-meta">
+                            <span class="module-badge badge-{{ cluster.difficulty }}">{{ cluster.difficulty }}</span>
+                            <span class="module-badge badge-pages">{{ cluster.pages|length }} pages</span>
+                        </div>
+                    </div>
+                    
+                    <div class="pages-list">
+                        {% for page in cluster.pages %}
+                        <div class="page-item" data-search="{{ page.title|lower }} {{ page.summary|lower }}">
+                            <div class="page-header">
+                                <div class="page-sequence">{{ forloop.counter }}</div>
+                                <div class="page-main">
+                                    <div class="page-title-row">
+                                        <span class="page-title">{{ page.title|truncatewords:20 }}</span>
+                                        {% if page.ai_doc_type or page.doc_type %}
+                                        <span class="page-type-badge page-type-{{ page.ai_doc_type|default:page.doc_type }}">
+                                            {{ page.ai_doc_type|default:page.doc_type }}
+                                        </span>
+                                        {% endif %}
+                                        {% if page.audience_level %}
+                                        <span class="page-level-badge page-level-{{ page.audience_level }}">
+                                            {{ page.audience_level }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if page.summary %}
+                                    <div class="page-summary">{{ page.summary|truncatewords:30 }}</div>
+                                    {% endif %}
+                                    
+                                    {% if page.learning_objectives %}
+                                    <div class="page-objectives">
+                                        <div class="page-objectives-title">💡 What You'll Learn</div>
+                                        <ul class="page-objectives-list">
+                                            {% for objective in page.learning_objectives|slice:":3" %}
+                                            <li>{{ objective.objective|default:objective }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="page-actions">
+                                        <a href="{% url 'dashboard:page_detail' page.page_id %}" class="page-link" onclick="event.stopPropagation()">View Page →</a>
+                                        {% if page.prerequisites %}
+                                        <span class="page-prereqs">
+                                            📋 {{ page.prerequisites|length }} prerequisite{{ page.prerequisites|length|pluralize }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📚</div>
+            <h2 class="empty-state-title">No Topics Found</h2>
+            <p class="empty-state-text">The taxonomy structure appears to be empty.</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle topic
+function toggleTopic(header) {
+    // Find the topic-content div (may be after description section)
+    let content = header.nextElementSibling;
+    while (content && !content.classList.contains('topic-content')) {
+        content = content.nextElementSibling;
+    }
+    
+    if (content) {
+        header.classList.toggle('active');
+        content.classList.toggle('active');
+    }
+}
+
+// Toggle module
+function toggleModule(header, event) {
+    event.stopPropagation();
+    const pagesList = header.nextElementSibling;
+    
+    header.classList.toggle('active');
+    pagesList.classList.toggle('active');
+}
+
+// Search functionality
+document.getElementById('searchInput')?.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase().trim();
+    
+    if (searchTerm === '') {
+        // Show all, collapse all
+        document.querySelectorAll('.topic-section').forEach(topic => {
+            topic.style.display = '';
+            topic.querySelector('.topic-header').classList.remove('active');
+            topic.querySelector('.topic-content').classList.remove('active');
+        });
+        document.querySelectorAll('.module-item').forEach(module => {
+            module.style.display = '';
+        });
+        document.querySelectorAll('.page-item').forEach(page => {
+            page.style.display = '';
+        });
+        return;
+    }
+    
+    // Search and expand matches
+    document.querySelectorAll('.topic-section').forEach(topic => {
+        const topicData = topic.dataset.search || '';
+        const topicHeader = topic.querySelector('.topic-header');
+        const topicContent = topic.querySelector('.topic-content');
+        
+        let topicHasMatch = topicData.includes(searchTerm);
+        let hasVisibleModules = false;
+        
+        // Check modules
+        topic.querySelectorAll('.module-item').forEach(module => {
+            const moduleData = module.dataset.search || '';
+            let moduleHasMatch = moduleData.includes(searchTerm);
+            let hasVisiblePages = false;
+            
+            // Check pages
+            module.querySelectorAll('.page-item').forEach(page => {
+                const pageData = page.dataset.search || '';
+                const pageMatches = pageData.includes(searchTerm);
+                
+                page.style.display = pageMatches || moduleHasMatch || topicHasMatch ? '' : 'none';
+                if (page.style.display !== 'none') {
+                    hasVisiblePages = true;
+                }
+            });
+            
+            module.style.display = (moduleHasMatch || topicHasMatch || hasVisiblePages) ? '' : 'none';
+            
+            if (module.style.display !== 'none') {
+                hasVisibleModules = true;
+                // Auto-expand module if it has matches
+                if (searchTerm && hasVisiblePages) {
+                    module.querySelector('.module-header').classList.add('active');
+                    module.querySelector('.pages-list').classList.add('active');
+                }
+            }
+        });
+        
+        topic.style.display = (topicHasMatch || hasVisibleModules) ? '' : 'none';
+        
+        // Auto-expand topic if it has matches
+        if (topic.style.display !== 'none' && searchTerm) {
+            topicHeader.classList.add('active');
+            topicContent.classList.add('active');
+        }
+    });
+});
+
+// Focus search on load
+window.addEventListener('load', () => {
+    document.getElementById('searchInput')?.focus();
+});
+</script>
+{% endblock %}

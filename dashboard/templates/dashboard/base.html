@@ -37,6 +37,7 @@
         .message.warning { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; }
         .message.info { background: #d1ecf1; border-left: 4px solid #17a2b8; color: #0c5460; }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <header>
@@ -59,5 +60,6 @@
         {% endif %}
         {% block content %}{% endblock %}
     </div>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

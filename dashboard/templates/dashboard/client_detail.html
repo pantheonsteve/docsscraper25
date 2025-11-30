@@ -5,10 +5,16 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h1 style="margin: 0;">{{ client.name }}</h1>
-    <a href="{% url 'dashboard:client_pages' client.id %}" 
-       style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
-        📊 View All Pages & AI Scores
-    </a>
+    <div style="display: flex; gap: 1rem;">
+        <a href="{% url 'dashboard:client_taxonomy' client.id %}" 
+           style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);">
+            📚 View Taxonomy
+        </a>
+        <a href="{% url 'dashboard:client_pages' client.id %}" 
+           style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);">
+            📊 View All Pages & AI Scores
+        </a>
+    </div>
 </div>
 
 <div class="stats">
